@@ -1,26 +1,48 @@
 package io.stormbird.token.management;
 
+import io.stormbird.token.entity.EthereumReadBuffer;
 import io.stormbird.token.management.Model.ComboBoxDataModel;
+import io.stormbird.token.management.Model.ComboBoxSimpleItem;
 import io.stormbird.token.management.Model.TextFieldDataModel;
 import io.stormbird.token.management.Model.TokenViewModel;
-import io.stormbird.token.tools.TokenDefinition;
+import org.web3j.utils.Convert;
+import org.web3j.utils.Numeric;
 import org.xml.sax.SAXException;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.web3j.crypto.*;
+
 
 public class TokenID extends JFrame{
+    private JSplitPane splitPane;
     private JPanel contentPane;
+    private JPanel resultPane;
     private JTextField fieldTokenID;
+    JComboBox comboBoxTickets;
+    JPanel resultControlPane;
+    JTextField fieldPrivateKey;
+    JTextField fieldContractAddress;
+    JTextField fieldPrice;
+    JTextField fieldPriceInMicroEth;
+    JTextField fieldExpireTime;
+
+    private static int ticketsNo=0;
+    private static int magicLinkCount=0;
 
     public InputStream ticketXML = getClass().getResourceAsStream("/TicketingContract.xml");
 
@@ -30,11 +52,16 @@ public class TokenID extends JFrame{
     public TokenID(){
         try {
             tokenViewModel=new TokenViewModel(ticketXML, Locale.getDefault());
-
+            splitPane = new JSplitPane();
             contentPane = new JPanel();
-            addComponentsToPane(contentPane);
+            addComponentsToContentPane(contentPane);
             contentPane.setLayout(new BoxLayout(contentPane, BoxLayout.Y_AXIS));
-            this.setContentPane(contentPane);
+            resultPane = new JPanel();
+            resultPane.setLayout(new BoxLayout(resultPane, BoxLayout.Y_AXIS));
+            initResultPane(resultPane);
+            splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT,contentPane,resultPane);
+            splitPane.setMinimumSize(new Dimension(400,300));
+            this.setContentPane(splitPane);
             this.setTitle("TokenID Generator");
             this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             this.setLocationByPlatform(true);
@@ -49,12 +76,47 @@ public class TokenID extends JFrame{
         (new TokenID()).setVisible(true);
     }
 
-    private  void addComponentsToPane(final Container pane){
+    private  void initResultPane(final Container pane){
+        GridBagConstraints col1Constraints = new GridBagConstraints();
+        col1Constraints.fill = GridBagConstraints.BOTH;
+        col1Constraints.anchor=GridBagConstraints.CENTER;
+        col1Constraints.ipadx=10;col1Constraints.ipady=10;
+        col1Constraints.weightx=0.5;
+        col1Constraints.gridwidth=1;
+        col1Constraints.gridx = 0;
+        col1Constraints.gridy = magicLinkCount;
+        GridBagConstraints col2Constraints = new GridBagConstraints();
+        col2Constraints.fill = GridBagConstraints.BOTH;
+        col2Constraints.anchor=GridBagConstraints.CENTER;
+        col2Constraints.ipadx=10;col2Constraints.ipady=10;
+        col2Constraints.weightx=0.5;
+        col2Constraints.gridwidth=1;
+        col2Constraints.gridx = 1;
+        col2Constraints.gridy = magicLinkCount;
+
+        resultControlPane = new JPanel();
+        resultControlPane.setMinimumSize(new Dimension(400,300));
+        resultControlPane.setBorder(new EmptyBorder(10, 10, 10, 10));
+        resultControlPane.setLayout(new GridBagLayout());
+        final JLabel label1 = new JLabel();
+        label1.setText("Token ID");
+        resultControlPane.add(label1,col1Constraints);
+        final JLabel label2 = new JLabel();
+        label2.setText("Magic Link");
+        resultControlPane.add(label2,col2Constraints);
+        resultControlPane.setAutoscrolls(true);
+        JScrollPane scrollPane = new JScrollPane(resultControlPane);
+        scrollPane.setMinimumSize(new Dimension(400,300));
+        pane.add(scrollPane,BorderLayout.CENTER);
+        pane.revalidate();
+        pane.repaint();
+    }
+    private  void addComponentsToContentPane(final Container pane){
         int gridy=0;
         GridBagConstraints col1Constraints = new GridBagConstraints();
         col1Constraints.fill = GridBagConstraints.BOTH;
         col1Constraints.anchor=GridBagConstraints.CENTER;
-        col1Constraints.ipadx=30;col1Constraints.ipady=30;
+        col1Constraints.ipadx=10;col1Constraints.ipady=10;
         col1Constraints.weightx=0.3;
         col1Constraints.gridwidth=1;
         col1Constraints.gridx = 0;
@@ -62,7 +124,7 @@ public class TokenID extends JFrame{
         GridBagConstraints col2Constraints = new GridBagConstraints();
         col2Constraints.fill = GridBagConstraints.BOTH;
         col2Constraints.anchor=GridBagConstraints.CENTER;
-        col2Constraints.ipadx=30;col2Constraints.ipady=30;
+        col2Constraints.ipadx=10;col2Constraints.ipady=10;
         col2Constraints.weightx=0.3;
         col2Constraints.gridwidth=1;
         col2Constraints.gridx = 1;
@@ -70,7 +132,7 @@ public class TokenID extends JFrame{
         GridBagConstraints col3Constraints = new GridBagConstraints();
         col3Constraints.fill = GridBagConstraints.BOTH;
         col3Constraints.anchor=GridBagConstraints.CENTER;
-        col3Constraints.ipadx=25;col3Constraints.ipady=25;
+        col3Constraints.ipadx=10;col3Constraints.ipady=10;
         col3Constraints.weightx = 0.5;
         col3Constraints.gridwidth=1;
         col3Constraints.gridx = 2;
@@ -78,7 +140,7 @@ public class TokenID extends JFrame{
         GridBagConstraints col4Constraints = new GridBagConstraints();
         col4Constraints.fill = GridBagConstraints.BOTH;
         col4Constraints.anchor=GridBagConstraints.CENTER;
-        col4Constraints.ipadx=25;col4Constraints.ipady=25;
+        col4Constraints.ipadx=10;col4Constraints.ipady=10;
         col4Constraints.weightx = 0.5;
         col4Constraints.gridwidth=1;
         col4Constraints.gridx = 3;
@@ -192,20 +254,125 @@ public class TokenID extends JFrame{
         JLabel labelTokenID = new JLabel();
         labelTokenID.setText("TokenID");
         controlsPane.add(labelTokenID, col1Constraints);
-//        controlsPane.add(new JLabel(" "));
-//        controlsPane.add(new JLabel(" "));
+
         fieldTokenID = new JTextField();
         fieldTokenID.setEditable(false);
         fieldTokenID.setEnabled(true);
-//        GridBagConstraints constraints = new GridBagConstraints();
-//        constraints.fill = GridBagConstraints.HORIZONTAL;
-//        constraints.gridwidth=2;
-//        constraints.gridx = 2;
-//        constraints.gridy = 0;
+
         controlsPane.add(fieldTokenID,col4Constraints);
+        gridy+=1;
+        col4Constraints.gridy=gridy;
+        JButton buttonAddToTicketList=new JButton();
+        buttonAddToTicketList.setText("Add To Ticket List");
+        buttonAddToTicketList.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                comboBoxTickets.addItem(new ComboBoxSimpleItem(fieldTokenID.getText(),fieldTokenID.getText()));
+            }
+        });
+        controlsPane.add(buttonAddToTicketList,col4Constraints);
+        //controlsPane.add(btnCreateMagicLink,col4Constraints);
         pane.add(controlsPane,BorderLayout.CENTER);
-        //pane.add(new JSeparator(), BorderLayout.CENTER);
+        /*
+         * tickets creation Panel
+         */
+        pane.add(new JSeparator());
+        //
+        //
+        JPanel ticketsCreateControlPane = new JPanel();
+        ticketsCreateControlPane.setLayout(new BoxLayout(ticketsCreateControlPane, BoxLayout.Y_AXIS));
+        //
+        JPanel ticketsOptionsPane = new JPanel();
+        gridy+=1;
+        col1Constraints.gridy=col2Constraints.gridy=gridy;
+        col1Constraints.weightx=0.3;col2Constraints.weightx=0.7;
+        JLabel labelTokenIDList=new JLabel();
+        labelTokenIDList.setText("Tickets list");
+        comboBoxTickets = new JComboBox();
+        ticketsOptionsPane.add(labelTokenIDList,col1Constraints);
+        ticketsOptionsPane.add(comboBoxTickets,col2Constraints);
+        ticketsCreateControlPane.add(ticketsOptionsPane,BorderLayout.NORTH);
+        //
+        JPanel ticketsCreatePane = new JPanel();
+        ticketsCreatePane.setBorder(new EmptyBorder(10, 10, 10, 10));
+        ticketsCreatePane.setLayout(new GridBagLayout());
+        col1Constraints.weightx=col3Constraints.weightx=0.2;
+        col2Constraints.weightx=col4Constraints.weightx=0.6;
+        gridy+=1;
+        col1Constraints.gridy=col2Constraints.gridy=col3Constraints.gridy=col4Constraints.gridy=gridy;
+        col2Constraints.weightx=0.5;
+        JLabel lablePrivateKey = new JLabel();
+        lablePrivateKey.setText("Private Key");
+        fieldPrivateKey = new JTextField();
+        JLabel labelContractAddress = new JLabel();
+        labelContractAddress.setText("Contract Address");
+        fieldContractAddress = new JTextField();
+        ticketsCreatePane.add(lablePrivateKey,col1Constraints);
+        ticketsCreatePane.add(fieldPrivateKey,col2Constraints);
+        ticketsCreatePane.add(labelContractAddress,col3Constraints);
+        ticketsCreatePane.add(fieldContractAddress,col4Constraints);
+        gridy+=1;
+        col1Constraints.gridy=col2Constraints.gridy=col3Constraints.gridy=col4Constraints.gridy=gridy;
+        JLabel lablePrice = new JLabel();
+        lablePrice.setText("Price (eth)");
+        fieldPrice = new JTextField();
+        fieldPriceInMicroEth = new JTextField();
+        JLabel labelExpireTime = new JLabel();
+        labelExpireTime.setText("Expire Time");
+        fieldExpireTime = new JTextField();
+        ticketsCreatePane.add(lablePrice,col1Constraints);
+        ticketsCreatePane.add(fieldPrice,col2Constraints);
+        JLabel lablePriceInMicroEth = new JLabel();
+        ticketsCreatePane.add(lablePriceInMicroEth,col3Constraints);
+
+        fieldPrice.addKeyListener(new KeyAdapter() {
+            public void keyReleased(KeyEvent e) {
+                try {
+                    String priceStr = fieldPrice.getText();
+                    if(priceStr==null || priceStr.isEmpty()){
+                        lablePriceInMicroEth.setText("");
+                    }else {
+                        long priceInSzabo = Math.round(Double.parseDouble(priceStr) * 1000000);
+                        fieldPriceInMicroEth.setText(String.valueOf(priceInSzabo));
+                        lablePriceInMicroEth.setText("Micro Eth:"+priceInSzabo);
+                    }
+                }catch (Exception ex){
+                    JOptionPane.showMessageDialog(null, "Invalid Data Type! Please check the type",
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                    fieldPrice.setText("");
+                    fieldPrice.requestFocusInWindow();
+                }
+            }
+        });
+        ticketsCreatePane.add(fieldPriceInMicroEth);
+        fieldPriceInMicroEth.setVisible(false);
+        gridy+=1;
+        col1Constraints.gridy=col2Constraints.gridy=col3Constraints.gridy=col4Constraints.gridy=gridy;
+        ticketsCreatePane.add(labelExpireTime,col1Constraints);
+        ticketsCreatePane.add(fieldExpireTime,col2Constraints);
+        gridy+=1;
+        col1Constraints.gridy=col2Constraints.gridy=col3Constraints.gridy=col4Constraints.gridy=gridy;
+        JButton btnCreateMagicLink = new JButton();
+        btnCreateMagicLink.setText("Create Magic-Link");
+        btnCreateMagicLink.setActionCommand("Create");
+        btnCreateMagicLink.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int size = comboBoxTickets.getItemCount();
+                if(size>0) {
+                    createMagicLink();
+                }else{
+                    JOptionPane.showMessageDialog(null, "Please add tokenid into ticket list first!",
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+        ticketsCreatePane.add(btnCreateMagicLink,col3Constraints);
+        ticketsCreateControlPane.add(ticketsCreatePane,BorderLayout.CENTER);
+        pane.add(ticketsCreateControlPane,BorderLayout.SOUTH);
+        //
         //pane.add(bottomPane,BorderLayout.SOUTH);
+
         updateTokenIDField();
         pane.revalidate();
         pane.repaint();
@@ -229,5 +396,144 @@ public class TokenID extends JFrame{
             tokenidStr = "0" + tokenidStr;
         }
         this.fieldTokenID.setText(tokenidStr.toUpperCase());
+    }
+    private void createMagicLink(){
+        magicLinkCount+=1;
+        GridBagConstraints col1Constraints = new GridBagConstraints();
+        col1Constraints.fill = GridBagConstraints.BOTH;
+        col1Constraints.anchor=GridBagConstraints.CENTER;
+        col1Constraints.ipadx=10;col1Constraints.ipady=10;
+        col1Constraints.insets = new Insets(5,5,5,5);
+        col1Constraints.weightx=0.5;
+        col1Constraints.gridwidth=1;
+        col1Constraints.gridx = 0;
+        col1Constraints.gridy = magicLinkCount;
+        GridBagConstraints col2Constraints = new GridBagConstraints();
+        col2Constraints.fill = GridBagConstraints.BOTH;
+        col2Constraints.anchor=GridBagConstraints.CENTER;
+        col2Constraints.ipadx=30;col2Constraints.ipady=30;
+        col2Constraints.insets = new Insets(5,5,5,5);
+        col2Constraints.weightx=0.5;
+        col2Constraints.gridwidth=1;
+        col2Constraints.gridx = 1;
+        col2Constraints.gridy = magicLinkCount;
+
+        int size = comboBoxTickets.getItemCount();
+        BigInteger[] tickets=new BigInteger[size];
+        for (int i = 0; i < size; i++) {
+            ComboBoxSimpleItem item = (ComboBoxSimpleItem)comboBoxTickets.getItemAt(i);
+            tickets[i]=new BigInteger(item.getValue(),16);
+        }
+
+        BigInteger price=(new BigInteger(fieldPriceInMicroEth.getText()));
+        BigInteger expiryTimestamp=new BigInteger(fieldExpireTime.getText());
+        String contractAddress=fieldContractAddress.getText();
+        String privateKey=fieldPrivateKey.getText();
+        BigInteger privateKeyofOrganizer=new BigInteger(privateKey,16);
+        byte[] linkData = encodeMessageForSpawning(price,expiryTimestamp,tickets,contractAddress);
+        Sign.SignatureData signedData = signUniversalLinks(linkData,privateKeyofOrganizer);
+        byte[] signature=covertSigToByte(signedData);
+        byte[] completeLink = new byte[linkData.length + signature.length];
+        System.arraycopy(linkData, 0, completeLink, 0, linkData.length);
+        System.arraycopy(signature, 0, completeLink, linkData.length, signature.length);
+
+        StringBuilder magicLinkSB = new StringBuilder();
+
+        magicLinkSB.append("https://app.awallet.io/");
+        byte[] b64 = Base64.getUrlEncoder().encode(completeLink);
+        magicLinkSB.append(new String(b64));
+
+        JComboBox comboBox= new JComboBox();
+        for(int i=0;i<comboBoxTickets.getItemCount();++i){
+            comboBox.addItem(comboBoxTickets.getItemAt(i));
+        }
+        resultControlPane.add(comboBox,col1Constraints);
+        JTextArea textArea = new JTextArea(magicLinkSB.toString());
+        textArea.setEditable(false);
+        textArea.setLineWrap(true);
+        textArea.setWrapStyleWord(true);
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        //textArea.setText();
+        resultControlPane.add(scrollPane,col2Constraints);
+        resultControlPane.revalidate();
+        resultControlPane.repaint();
+        resultPane.revalidate();
+        resultPane.repaint();
+        splitPane.revalidate();
+        splitPane.repaint();
+        this.revalidate();
+        this.repaint();
+    }
+    public byte[] covertSigToByte(Sign.SignatureData ecSig)
+    {
+        byte subV = ecSig.getV();
+        byte[] subR = ecSig.getR();
+        byte[] subS = ecSig.getS();
+        ByteBuffer sig=ByteBuffer.allocate(subR.length+subS.length+1);
+        sig.put(subR);
+        sig.put(subS);
+        sig.put(subV);
+        return sig.array();
+    }
+    public Sign.SignatureData signUniversalLinks(byte[] linkData, BigInteger privateKeyOfOrganiser)
+    {
+        ECKeyPair ecKeyPair  = ECKeyPair.create(privateKeyOfOrganiser);
+        //returns the v, r and s signature params
+        return Sign.signMessage(linkData, ecKeyPair);
+    }
+
+    /**
+     * @param priceInSzabo
+     * @param expiryTimestamp
+     * @param tickets
+     * @param contractAddress
+     * @return
+     */
+    public static byte[] encodeMessageForSpawning (
+            BigInteger priceInSzabo,
+            BigInteger expiryTimestamp,
+            BigInteger[] tickets,
+            String contractAddress)
+    {
+        //0x01: Standard magic link.
+        //0x02: Spawn token magic link.
+        //0x03: Customisable spawn token link.
+        int byteLength=0;
+        byte[] leadingbytes = hexStringToBytes("02");
+        byteLength=1;//leading lenght
+        byte[] priceInMicroWei = priceInSzabo.toByteArray();
+        byteLength+=32;//priceinwei
+        byte[] expiry = expiryTimestamp.toByteArray();
+        byteLength+=32;//expiry
+        byteLength+=20;//contract address
+        byteLength+=tickets.length*32;//tickets
+        ByteBuffer message = ByteBuffer.allocate(byteLength);
+        message.put(leadingbytes);
+        byte[] leadingZeros = new byte[32 - priceInMicroWei.length];
+        message.put(leadingZeros);
+        message.put(priceInMicroWei);
+        byte[] leadingZerosExpiry = new byte[32 - expiry.length];
+        message.put(leadingZerosExpiry);
+        message.put(expiry);
+        byte[] contract = hexStringToBytes(Numeric.cleanHexPrefix(contractAddress));
+        message.put(contract);
+        for(BigInteger ticket : tickets) {
+            //need to pad so that it is 32bytes
+            String paddedTicket = Numeric.toHexStringNoPrefixZeroPadded(ticket, 64);
+            byte[] ticketAsByteArray = hexStringToBytes(paddedTicket);
+            message.put(ticketAsByteArray);
+        }
+        return message.array();
+    }
+    private static byte[] hexStringToBytes(String s)
+    {
+        int len = s.length();
+        byte[] data = new byte[len / 2];
+        for (int i = 0; i < len; i += 2)
+        {
+            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
+                    + Character.digit(s.charAt(i + 1), 16));
+        }
+        return data;
     }
 }
