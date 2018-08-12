@@ -1,51 +1,51 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?><token><ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
-<ds:SignedInfo>
-<ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
-<ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256"/>
-<ds:Reference URI="">
-<ds:Transforms>
-<ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>
-<ds:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
-</ds:Transforms>
-<ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>
-<ds:DigestValue>MJVWADdSI8p7RwR3uptlPL5LZmwtwBsclKTwVPEmWYs=</ds:DigestValue>
-</ds:Reference>
-</ds:SignedInfo>
-<ds:SignatureValue>
-kporx19FbGkNJaJAF4hMmpT6riH/lv2wdJdoMOIj8JVva5KIBc4eY0TW3tGz6sH7QwtAkDtb+n92
-41/ebewwRVGHqYQ6lsNiS1AXq14e3nnSQkBEB4IwJ/4svy57e2TqQsPgiYfyf0kNpvQnhIUbHX6z
-zSg6McerMl4TIo7sE/+gUw==
-</ds:SignatureValue>
-<ds:KeyInfo>
-  <ds:KeyName>Shankai</ds:KeyName>
-<ds:X509Data>
-<ds:X509Certificate>
-MIIFBzCCBK2gAwIBAgIQKCMFmlBLtxz6L27XkUOsHjAKBggqhkjOPQQDAjCBkDELMAkGA1UEBhMC
-R0IxGzAZBgNVBAgTEkdyZWF0ZXIgTWFuY2hlc3RlcjEQMA4GA1UEBxMHU2FsZm9yZDEaMBgGA1UE
-ChMRQ09NT0RPIENBIExpbWl0ZWQxNjA0BgNVBAMTLUNPTU9ETyBFQ0MgRG9tYWluIFZhbGlkYXRp
-b24gU2VjdXJlIFNlcnZlciBDQTAeFw0xODA1MTEwMDAwMDBaFw0xOTA1MTEyMzU5NTlaMFAxITAf
-BgNVBAsTGERvbWFpbiBDb250cm9sIFZhbGlkYXRlZDEUMBIGA1UECxMLUG9zaXRpdmVTU0wxFTAT
-BgNVBAMTDHNrc3RyYXZlbC5jbjCBmzAQBgcqhkjOPQIBBgUrgQQAIwOBhgAEADc2VNAGlEOcdqeU
-A0vaxIC8gCFb9FDF8ZrrlJwqhpO/ZmnTCWUfe4LoI1a37Zv7QejC2+vPhyP0q55PvUtJT9INARfc
-VaG5jRpTw3ukSF1+ww/E/T6YqtrRV44U7rSF8XPTH0CmDrJD6z/b2aCXwcix4PByn8O6skTdZXOj
-LEXifqcjo4IC4zCCAt8wHwYDVR0jBBgwFoAUu/oI4L9U7lr9FqQ1AgmppMjs/UswHQYDVR0OBBYE
-FGyswybdwCsAau7aZaBGFEcL2XXmMA4GA1UdDwEB/wQEAwIFgDAMBgNVHRMBAf8EAjAAMB0GA1Ud
-JQQWMBQGCCsGAQUFBwMBBggrBgEFBQcDAjBPBgNVHSAESDBGMDoGCysGAQQBsjEBAgIHMCswKQYI
-KwYBBQUHAgEWHWh0dHBzOi8vc2VjdXJlLmNvbW9kby5jb20vQ1BTMAgGBmeBDAECATBUBgNVHR8E
-TTBLMEmgR6BFhkNodHRwOi8vY3JsLmNvbW9kb2NhLmNvbS9DT01PRE9FQ0NEb21haW5WYWxpZGF0
-aW9uU2VjdXJlU2VydmVyQ0EuY3JsMIGFBggrBgEFBQcBAQR5MHcwTwYIKwYBBQUHMAKGQ2h0dHA6
-Ly9jcnQuY29tb2RvY2EuY29tL0NPTU9ET0VDQ0RvbWFpblZhbGlkYXRpb25TZWN1cmVTZXJ2ZXJD
-QS5jcnQwJAYIKwYBBQUHMAGGGGh0dHA6Ly9vY3NwLmNvbW9kb2NhLmNvbTApBgNVHREEIjAgggxz
-a3N0cmF2ZWwuY26CEHd3dy5za3N0cmF2ZWwuY24wggEEBgorBgEEAdZ5AgQCBIH1BIHyAPAAdgDu
-S723dc5guuFCaR+r4Z5mow9+X7By2IMAxHuJeqj9ywAAAWNOX8kpAAAEAwBHMEUCIEIb/jymAGpZ
-LG4umW1TbfCe/7Sr5MEIYknkdRdd6I6qAiEA2pHlmnby7PaQwoZrFGqIPQEyJ6oChl+7VRrcoA4t
-5JsAdgB0ftqDMa0zEJEhnM4lT0Jwwr/9XkIgCMY3NXnmEHvMVgAAAWNOX8mcAAAEAwBHMEUCIQC/
-LOBZaO136CYN7GYr+OODcLZ/AG2r7ge7BigCRSk8fQIgC/n33uxEZD+w3ENTxTdOhCTxvSW6BL71
-wFYJPkFHYWkwCgYIKoZIzj0EAwIDSAAwRQIhAIi6VxP/HzmR3rGw6f9M6FLiH0TNgn1EbARAluAV
-bFTFAiBKJSQRqq66kI9yMPc1NJISGi8btpWfPiB78twtjuHe7A==
-</ds:X509Certificate>
-</ds:X509Data>
-</ds:KeyInfo>
+  <ds:SignedInfo>
+    <ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+    <ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256"/>
+    <ds:Reference URI="">
+      <ds:Transforms>
+        <ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>
+        <ds:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+      </ds:Transforms>
+      <ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>
+      <ds:DigestValue>MJVWADdSI8p7RwR3uptlPL5LZmwtwBsclKTwVPEmWYs=</ds:DigestValue>
+    </ds:Reference>
+  </ds:SignedInfo>
+  <ds:SignatureValue>
+    kporx19FbGkNJaJAF4hMmpT6riH/lv2wdJdoMOIj8JVva5KIBc4eY0TW3tGz6sH7QwtAkDtb+n92
+    41/ebewwRVGHqYQ6lsNiS1AXq14e3nnSQkBEB4IwJ/4svy57e2TqQsPgiYfyf0kNpvQnhIUbHX6z
+    zSg6McerMl4TIo7sE/+gUw==
+  </ds:SignatureValue>
+  <ds:KeyInfo>
+    <ds:KeyName>Shankai</ds:KeyName>
+    <ds:X509Data>
+      <ds:X509Certificate>
+        MIIFBzCCBK2gAwIBAgIQKCMFmlBLtxz6L27XkUOsHjAKBggqhkjOPQQDAjCBkDELMAkGA1UEBhMC
+        R0IxGzAZBgNVBAgTEkdyZWF0ZXIgTWFuY2hlc3RlcjEQMA4GA1UEBxMHU2FsZm9yZDEaMBgGA1UE
+        ChMRQ09NT0RPIENBIExpbWl0ZWQxNjA0BgNVBAMTLUNPTU9ETyBFQ0MgRG9tYWluIFZhbGlkYXRp
+        b24gU2VjdXJlIFNlcnZlciBDQTAeFw0xODA1MTEwMDAwMDBaFw0xOTA1MTEyMzU5NTlaMFAxITAf
+        BgNVBAsTGERvbWFpbiBDb250cm9sIFZhbGlkYXRlZDEUMBIGA1UECxMLUG9zaXRpdmVTU0wxFTAT
+        BgNVBAMTDHNrc3RyYXZlbC5jbjCBmzAQBgcqhkjOPQIBBgUrgQQAIwOBhgAEADc2VNAGlEOcdqeU
+        A0vaxIC8gCFb9FDF8ZrrlJwqhpO/ZmnTCWUfe4LoI1a37Zv7QejC2+vPhyP0q55PvUtJT9INARfc
+        VaG5jRpTw3ukSF1+ww/E/T6YqtrRV44U7rSF8XPTH0CmDrJD6z/b2aCXwcix4PByn8O6skTdZXOj
+        LEXifqcjo4IC4zCCAt8wHwYDVR0jBBgwFoAUu/oI4L9U7lr9FqQ1AgmppMjs/UswHQYDVR0OBBYE
+        FGyswybdwCsAau7aZaBGFEcL2XXmMA4GA1UdDwEB/wQEAwIFgDAMBgNVHRMBAf8EAjAAMB0GA1Ud
+        JQQWMBQGCCsGAQUFBwMBBggrBgEFBQcDAjBPBgNVHSAESDBGMDoGCysGAQQBsjEBAgIHMCswKQYI
+        KwYBBQUHAgEWHWh0dHBzOi8vc2VjdXJlLmNvbW9kby5jb20vQ1BTMAgGBmeBDAECATBUBgNVHR8E
+        TTBLMEmgR6BFhkNodHRwOi8vY3JsLmNvbW9kb2NhLmNvbS9DT01PRE9FQ0NEb21haW5WYWxpZGF0
+        aW9uU2VjdXJlU2VydmVyQ0EuY3JsMIGFBggrBgEFBQcBAQR5MHcwTwYIKwYBBQUHMAKGQ2h0dHA6
+        Ly9jcnQuY29tb2RvY2EuY29tL0NPTU9ET0VDQ0RvbWFpblZhbGlkYXRpb25TZWN1cmVTZXJ2ZXJD
+        QS5jcnQwJAYIKwYBBQUHMAGGGGh0dHA6Ly9vY3NwLmNvbW9kb2NhLmNvbTApBgNVHREEIjAgggxz
+        a3N0cmF2ZWwuY26CEHd3dy5za3N0cmF2ZWwuY24wggEEBgorBgEEAdZ5AgQCBIH1BIHyAPAAdgDu
+        S723dc5guuFCaR+r4Z5mow9+X7By2IMAxHuJeqj9ywAAAWNOX8kpAAAEAwBHMEUCIEIb/jymAGpZ
+        LG4umW1TbfCe/7Sr5MEIYknkdRdd6I6qAiEA2pHlmnby7PaQwoZrFGqIPQEyJ6oChl+7VRrcoA4t
+        5JsAdgB0ftqDMa0zEJEhnM4lT0Jwwr/9XkIgCMY3NXnmEHvMVgAAAWNOX8mcAAAEAwBHMEUCIQC/
+        LOBZaO136CYN7GYr+OODcLZ/AG2r7ge7BigCRSk8fQIgC/n33uxEZD+w3ENTxTdOhCTxvSW6BL71
+        wFYJPkFHYWkwCgYIKoZIzj0EAwIDSAAwRQIhAIi6VxP/HzmR3rGw6f9M6FLiH0TNgn1EbARAluAV
+        bFTFAiBKJSQRqq66kI9yMPc1NJISGi8btpWfPiB78twtjuHe7A==
+      </ds:X509Certificate>
+    </ds:X509Data>
+  </ds:KeyInfo>
 </ds:Signature>
   <contract id="holding_contract" type="holding">
     <address network="1">0xA66A3F08068174e8F005112A8b2c7A507a822335</address>
@@ -217,526 +217,637 @@ bFTFAiBKJSQRqq66kI9yMPc1NJISGi8btpWfPiB78twtjuHe7A==
     1.3.6.1.4.1.1466.115.121.1.26 is IA5String
     1.3.6.1.4.1.1466.115.121.1.27 is Integer
   -->
-    <attribute-type id="locality" oid="2.5.4.7" syntax="1.3.6.1.4.1.1466.115.121.1.15">
-      <name lang="en">City</name>
-      <name lang="zh">城市</name>
-      <name lang="es">Ciudad</name>
-      <name lang="ru">город</name>
-      <origin as="mapping" bitmask="00000000000000000000000000000000FF000000000000000000000000000000">
+    <attribute-type id="country" oid="2.5.4.7" syntax="1.3.6.1.4.1.1466.115.121.1.15">
+      <name lang="en">Country</name>
+      <name lang="zh">国家</name>
+      <origin as="mapping" bitmask="FF00000000000000000000000000000000000000000000000000000000000000">
         <option key="1">
-          <value lang="ru">Москва́</value>
-          <value lang="en">Moscow</value>
-          <value lang="zh">莫斯科</value>
-          <value lang="es">Moscú</value>
+          <value lang="en">KR</value>
         </option>
         <option key="2">
-          <value lang="ru">Санкт-Петербу́рг</value>
-          <value lang="en">Saint Petersburg</value>
-          <value lang="zh">圣彼得堡</value>
-          <value lang="es">San Petersburgo</value>
+          <value lang="en">BR</value>
         </option>
         <option key="3">
-          <value lang="ru">сочи</value>
-          <value lang="en">Sochi</value>
-          <value lang="zh">索契</value>
-          <value lang="es">Sochi</value>
+          <value lang="en">IN</value>
         </option>
         <option key="4">
-          <value lang="ru">екатеринбург</value>
-          <value lang="en">Ekaterinburg</value>
-          <value lang="zh">叶卡捷琳堡</value>
-          <value lang="es">Ekaterinburg</value>
+          <value lang="en">ID</value>
         </option>
         <option key="5">
-          <value lang="ru">Саранск</value>
-          <value lang="en">Saransk</value>
-          <value lang="zh">萨兰斯克</value>
-          <value lang="es">Saransk</value>
+          <value lang="en">PK</value>
         </option>
         <option key="6">
-          <value lang="ru">казань</value>
-          <value lang="en">Kazan</value>
-          <value lang="zh">喀山</value>
-          <value lang="es">Kazan</value>
+          <value lang="en">RU</value>
         </option>
         <option key="7">
-          <value lang="ru">Нижний Новгород</value>
-          <value lang="en">Nizhny Novgorod</value>
-          <value lang="zh">下诺夫哥罗德</value>
-          <value lang="es">Nizhny Novgorod</value>
+          <value lang="en">TR</value>
         </option>
         <option key="8">
-          <value lang="ru">Ростов-на-Дону</value>
-          <value lang="en">Rostov-on-Don</value>
-          <value lang="zh">顿河畔罗斯托夫</value>
-          <value lang="es">Rostov-on-Don</value>
+          <value lang="en">MX</value>
         </option>
         <option key="9">
-          <value lang="ru">Самара</value>
-          <value lang="en">Samara</value>
-          <value lang="zh">萨马拉</value>
-          <value lang="es">Samara</value>
+          <value lang="en">CN</value>
         </option>
         <option key="10">
-          <value lang="ru">Волгоград</value>
-          <value lang="en">Volgograd</value>
-          <value lang="zh">伏尔加格勒</value>
-          <value lang="es">Volgogrado</value>
+          <value lang="en">JP</value>
         </option>
         <option key="11">
-          <value lang="ru">Калининград</value>
-          <value lang="en">Kaliningrad</value>
-          <value lang="zh">加里宁格勒</value>
-          <value lang="es">Kaliningrad</value>
+          <value lang="en">US</value>
         </option>
-        <option key="255">
-          <value lang="ru">Сидней</value>
-          <value lang="en">Sydney</value>
-          <value lang="zh">悉尼</value>
-          <value lang="es">Sídney</value>
+        <option key="12">
+          <value lang="en">TH</value>
         </option>
-        <option key="254">
-          <value lang="ru">Сингапур</value>
-          <value lang="en">Singapore</value>
-          <value lang="zh">新加坡</value>
-          <value lang="es">Singapur</value>
+        <option key="13">
+          <value lang="en">CN</value>
         </option>
-        <option key="253">
-          <value lang="zh">深圳</value>
-          <value lang="en">Shenzhen</value>
+        <option key="14">
+          <value lang="en">IN</value>
         </option>
-        <option key="252">
-          <value lang="zh">北京</value>
-          <value lang="en">Beijing</value>
+        <option key="15">
+          <value lang="en">GB</value>
         </option>
-        <option key="251">
-          <value lang="zh">上海</value>
-          <value lang="en">Shanghai</value>
+        <option key="16">
+          <value lang="en">CN</value>
         </option>
-        <option key="250">
-          <value lang="en">Tokyo</value>
-          <value lang="zh">东京</value>
+        <option key="17">
+          <value lang="en">EG</value>
         </option>
-        <option key="249">
-          <value lang="en">Seoul</value>
-          <value lang="zh">首尔</value>
+        <option key="18">
+          <value lang="en">IR</value>
         </option>
-        <option key="248">
-          <value lang="zh">重庆</value>
-          <value lang="en">Chongqing</value>
+        <option key="19">
+          <value lang="en">CO</value>
         </option>
-        <option key="247">
-          <value lang="en">New York</value>
-          <value lang="zh">纽约</value>
+        <option key="20">
+          <value lang="en">ID</value>
         </option>
-        <option key="246">
-          <value lang="en">Melbourne</value>
-          <value lang="zh">墨尔本</value>
+        <option key="21">
+          <value lang="en">CN</value>
         </option>
-        <option key="245">
-          <value lang="en">Hong Kong</value>
-          <value lang="zh">香港</value>
+        <option key="22">
+          <value lang="en">PE</value>
         </option>
-        <option key="244">
-          <value lang="zh">成都</value>
-          <value lang="en">Chengdu</value>
+        <option key="23">
+          <value lang="en">BR</value>
         </option>
-        <option key="243">
-          <value lang="en">Kuala Lumpur</value>
-          <value lang="zh">吉隆坡</value>
+        <option key="24">
+          <value lang="en">PK</value>
         </option>
-        <option key="242">
-          <value lang="en">Bangkok</value>
-          <value lang="zh">曼谷</value>
+        <option key="25">
+          <value lang="en">ID</value>
         </option>
-        <option key="241">
-          <value lang="en">San Francisco</value>
-          <value lang="zh">三藩市</value>
+        <option key="26">
+          <value lang="en">CL</value>
         </option>
-        <option key="240">
-          <value lang="en">Las Vegas</value>
-          <value lang="zh">拉斯维加斯</value>
+        <option key="27">
+          <value lang="en">RU</value>
         </option>
-        <option key="239">
-          <value lang="en">London</value>
-          <value lang="zh">伦敦</value>
+        <option key="28">
+          <value lang="en">CN</value>
         </option>
-        <option key="238">
-          <value lang="en">Barcelona</value>
-          <value lang="zh">巴塞罗那</value>
+        <option key="29">
+          <value lang="en">IN</value>
         </option>
-        <option key="237">
-          <value lang="en">Madrid</value>
-          <value lang="zh">马德里</value>
+        <option key="30">
+          <value lang="en">CN</value>
         </option>
-        <option key="236">
-          <value lang="en">Zug</value>
-          <value lang="zh">楚格</value>
+        <option key="31">
+          <value lang="en">AU</value>
         </option>
-        <option key="235">
-          <value lang="en">Paris</value>
-          <value lang="zh">巴黎</value>
+        <option key="32">
+          <value lang="en">CN</value>
         </option>
-        <option key="234">
-          <value lang="en">Dubai</value>
-          <value lang="zh">迪拜</value>
+        <option key="33">
+          <value lang="en">SG</value>
         </option>
-        <option key="233">
-          <value lang="en">TBC</value>
-          <value lang="zh">待定</value>
+        <option key="34">
+          <value lang="en">IN</value>
         </option>
-         <option key="232">
-          <value lang="en">Exhibition stand A311</value>
-          <value lang="zh">展台A311</value>
+        <option key="35">
+          <value lang="en">IQ</value>
+        </option>
+        <option key="36">
+          <value lang="en">KR</value>
+        </option>
+        <option key="37">
+          <value lang="en">US</value>
+        </option>
+        <option key="38">
+          <value lang="en">JP</value>
+        </option>
+        <option key="39">
+          <value lang="en">BD</value>
+        </option>
+        <option key="40">
+          <value lang="en">DE</value>
+        </option>
+        <option key="41">
+          <value lang="en">EG</value>
+        </option>
+        <option key="42">
+          <value lang="en">IN</value>
+        </option>
+        <option key="43">
+          <value lang="en">ID</value>
+        </option>
+        <option key="44">
+          <value lang="en">IN</value>
+        </option>
+        <option key="45">
+          <value lang="en">CN</value>
+        </option>
+        <option key="46">
+          <value lang="en">VN</value>
+        </option>
+        <option key="47">
+          <value lang="en">CN</value>
+        </option>
+        <option key="48">
+          <value lang="en">TR</value>
+        </option>
+        <option key="49">
+          <value lang="en">AR</value>
+        </option>
+        <option key="50">
+          <value lang="en">CN</value>
+        </option>
+        <option key="51">
+          <value lang="en">IN</value>
+        </option>
+        <option key="52">
+          <value lang="en">MA</value>
+        </option>
+        <option key="53">
+          <value lang="en">US</value>
+        </option>
+        <option key="54">
+          <value lang="en">CN</value>
+        </option>
+        <option key="55">
+          <value lang="en">ES</value>
+        </option>
+        <option key="56">
+          <value lang="en">ID</value>
+        </option>
+        <option key="57">
+          <value lang="en">KP</value>
+        </option>
+        <option key="58">
+          <value lang="en">CN</value>
+        </option>
+        <option key="59">
+          <value lang="en">CD</value>
+        </option>
+        <option key="60">
+          <value lang="en">IT</value>
+        </option>
+        <option key="61">
+          <value lang="en">CN</value>
+        </option>
+        <option key="62">
+          <value lang="en">JP</value>
+        </option>
+        <option key="63">
+          <value lang="en">UA</value>
+        </option>
+        <option key="64">
+          <value lang="en">MM</value>
+        </option>
+        <option key="65">
+          <value lang="en">CA</value>
+        </option>
+        <option key="66">
+          <value lang="en">CN</value>
+        </option>
+        <option key="67">
+          <value lang="en">CN</value>
+        </option>
+        <option key="68">
+          <value lang="en">KR</value>
+        </option>
+        <option key="69">
+          <value lang="en">ET</value>
+        </option>
+        <option key="70">
+          <value lang="en">CN</value>
+        </option>
+        <option key="71">
+          <value lang="en">BR</value>
+        </option>
+        <option key="72">
+          <value lang="en">KR</value>
+        </option>
+        <option key="73">
+          <value lang="en">ID</value>
+        </option>
+        <option key="74">
+          <value lang="en">EG</value>
+        </option>
+        <option key="75">
+          <value lang="en">CN</value>
+        </option>
+        <option key="76">
+          <value lang="en">CU</value>
+        </option>
+        <option key="77">
+          <value lang="en">JP</value>
+        </option>
+        <option key="78">
+          <value lang="en">BR</value>
+        </option>
+        <option key="79">
+          <value lang="en">FR</value>
+        </option>
+        <option key="80">
+          <value lang="en">UZ</value>
+        </option>
+        <option key="81">
+          <value lang="en">BR</value>
+        </option>
+        <option key="82">
+          <value lang="en">ID</value>
+        </option>
+        <option key="83">
+          <value lang="en">CO</value>
+        </option>
+        <option key="84">
+          <value lang="en">EC</value>
+        </option>
+        <option key="85">
+          <value lang="en">CN</value>
+        </option>
+        <option key="86">
+          <value lang="en">TR</value>
+        </option>
+        <option key="87">
+          <value lang="en">ID</value>
+        </option>
+        <option key="88">
+          <value lang="en">CN</value>
+        </option>
+        <option key="89">
+          <value lang="en">BR</value>
+        </option>
+        <option key="90">
+          <value lang="en">RO</value>
+        </option>
+        <option key="91">
+          <value lang="en">PK</value>
+        </option>
+        <option key="92">
+          <value lang="en">PH</value>
+        </option>
+        <option key="93">
+          <value lang="en">ID</value>
+        </option>
+        <option key="94">
+          <value lang="en">US</value>
+        </option>
+        <option key="95">
+          <value lang="en">CI</value>
+        </option>
+        <option key="96">
+          <value lang="en">IR</value>
+        </option>
+        <option key="97">
+          <value lang="en">CO</value>
+        </option>
+        <option key="98">
+          <value lang="en">IN</value>
+        </option>
+        <option key="99">
+          <value lang="en">HU</value>
+        </option>
+        <option key="100">
+          <value lang="en">VE</value>
         </option>
       </origin>
     </attribute-type>
-    <attribute-type id="venue" syntax="1.3.6.1.4.1.1466.115.121.1.15">
-      <name lang="en">Venue</name>
-      <name lang="zh">场馆</name>
-      <name lang="es">Lugar</name>
-      <name lang="ru">место встречи</name>
-      <origin as="mapping" bitmask="0000000000000000000000000000000000FF0000000000000000000000000000">
+    <attribute-type id="locality" oid="2.5.4.7" syntax="1.3.6.1.4.1.1466.115.121.1.15">
+      <name lang="en">City</name>
+      <name lang="zh">城市</name>
+      <origin as="mapping" bitmask="FF00000000000000000000000000000000000000000000000000000000000000">
         <option key="1">
-          <value lang="ru">Стадион Калининград</value>
-          <value lang="en">Kaliningrad Stadium</value>
-          <value lang="zh">加里宁格勒体育场</value>
-          <value lang="es">Estadio de Kaliningrado</value>
+          <value lang="en">SEOUL</value>
         </option>
         <option key="2">
-          <value lang="ru">Екатеринбург Арена</value>
-          <value lang="en">Volgograd Arena</value>
-          <value lang="zh">伏尔加格勒体育场</value>
-          <value lang="es">Volgogrado Arena</value>
+          <value lang="en">São Paulo</value>
         </option>
         <option key="3">
-          <value lang="ru">Казань Арена</value>
-          <value lang="en">Ekaterinburg Arena</value>
-          <value lang="zh">加里宁格勒体育场</value>
-          <value lang="es">Ekaterimburgo Arena</value>
+          <value lang="en">Bombay</value>
         </option>
         <option key="4">
-          <value lang="ru">Мордовия Арена</value>
-          <value lang="en">Fisht Stadium</value>
-          <value lang="zh">费什体育场</value>
-          <value lang="es">Estadio Fisht</value>
+          <value lang="en">JAKARTA</value>
         </option>
         <option key="5">
-          <value lang="ru">Ростов Арена</value>
-          <value lang="en">Kazan Arena</value>
-          <value lang="zh">喀山体育场</value>
-          <value lang="es">Kazan Arena</value>
+          <value lang="en">Karachi</value>
         </option>
         <option key="6">
-          <value lang="ru">Самара Арена</value>
-          <value lang="en">Nizhny Novgorod Stadium</value>
-          <value lang="zh">下诺夫哥罗德体育场</value>
-          <value lang="es">Estadio de Nizhni Novgorod</value>
+          <value lang="en">MOSKVA (Moscow)</value>
         </option>
         <option key="7">
-          <value lang="ru">Стадион Калининград</value>
-          <value lang="en">Luzhniki Stadium</value>
-          <value lang="zh">卢日尼基体育场</value>
-          <value lang="es">Estadio Luzhniki</value>
+          <value lang="en">Istanbul</value>
         </option>
         <option key="8">
-          <value lang="ru">Стадион Лужники</value>
-          <value lang="en">Samara Arena</value>
-          <value lang="zh">萨马拉体育场</value>
-          <value lang="es">Samara Arena</value>
+          <value lang="en">MEXICO (Mexico City)</value>
         </option>
         <option key="9">
-          <value lang="ru">Стадион Нижний Новгород</value>
-          <value lang="en">Rostov Arena</value>
-          <value lang="zh">罗斯托夫体育场</value>
-          <value lang="es">Rostov Arena</value>
+          <value lang="en">Shanghai</value>
         </option>
         <option key="10">
-          <value lang="ru">Стадион Спартак</value>
-          <value lang="en">Spartak Stadium</value>
-          <value lang="zh">斯巴达克体育场</value>
-          <value lang="es">Estadio del Spartak</value>
+          <value lang="en">TOKYO</value>
         </option>
         <option key="11">
-          <value lang="ru">Стадион Санкт-Петербург</value>
-          <value lang="en">Saint Petersburg Stadium</value>
-          <value lang="zh">圣彼得堡体育场</value>
-          <value lang="es">Estadio de San Petersburgo</value>
+          <value lang="en">New York (NY)</value>
         </option>
         <option key="12">
-          <value lang="ru">Стадион Фишт</value>
-          <value lang="en">Mordovia Arena</value>
-          <value lang="zh">莫多维亚体育场</value>
-          <value lang="es">Mordovia Arena</value>
+          <value lang="en">BANGKOK</value>
         </option>
-        <option key="255">
-          <value lang="en">UNSW Michael Crouch Innovation Center</value>
-          <value lang="zh">新南威尔大学Michael Crouch创新中心</value>
-          <value lang="es">Centro de Innovación de Michael Crouch UNSW</value>
+        <option key="13">
+          <value lang="en">BEIJING</value>
         </option>
-        <option key="254">
-          <value lang="en">FOUR SEASONS HOTEL SHENZHEN</value>
-          <value lang="zh">深圳四季酒店</value>
+        <option key="14">
+          <value lang="en">Delhi</value>
         </option>
-        <option key="253">
-          <value lang="en">Paypal Innovation Lab</value>
+        <option key="15">
+          <value lang="en">LONDON</value>
         </option>
-        <option key="252">
-          <value lang="en">The Centrepoint</value>
+        <option key="16">
+          <value lang="en">HongKong</value>
         </option>
-        <option key="251">
-          <value lang="en">TBC</value>
-          <value lang="zh">待定</value>
+        <option key="17">
+          <value lang="en">CAIRO</value>
         </option>
-        <option key="250">
-          <value>thebridge</value>
+        <option key="18">
+          <value lang="en">TEHRAN</value>
         </option>
-        <option key="249">
-          <value>BASH</value>
+        <option key="19">
+          <value lang="en">BOGOTA</value>
         </option>
-        <option key="248">
-          <value>Spacemob</value>
+        <option key="20">
+          <value lang="en">Bandung</value>
         </option>
-        <option key="247">
-          <value lang="en">32 Carpenter Street</value>
+        <option key="21">
+          <value lang="en">Tianjin</value>
         </option>
-        <option key="246">
-          <value>Block 71</value>
+        <option key="22">
+          <value lang="en">LIMA</value>
         </option>
-        <option key="245">
-          <value lang="en">Microsoft Singapore</value>
-          <value lang="zh">微软新加坡</value>
+        <option key="23">
+          <value lang="en">Rio de Janeiro</value>
         </option>
-        <option key="243">
-          <value lang="en">Google Singapore</value>
+        <option key="24">
+          <value lang="en">Lahore</value>
         </option>
-        <option key="242">
-          <value lang="en">The Blockchain Hub</value>
+        <option key="25">
+          <value lang="en">Bogor</value>
         </option>
-        <option key="241">
-          <value>BitTemple</value>
+        <option key="26">
+          <value lang="en">SANTIAGO</value>
         </option>
-        <option key="240">
-          <value lang="en">ADD BLOCKCHAIN STUDIO</value>
+        <option key="27">
+          <value lang="en">St Petersburg</value>
         </option>
-        <option key="239">
-          <value lang="en">Rosewood Beijing</value>
-          <value lang="zh">北京瑰丽酒店</value>
+        <option key="28">
+          <value lang="en">Shenyang</value>
         </option>
-        <option key="238">
-          <value lang="en">Stratum</value>
-          <value lang="zh">臻宛</value>
+        <option key="29">
+          <value lang="en">Calcutta</value>
         </option>
-        <option key="237">
-          <value lang="en">Hong Kong Convention and Exhibition Centre</value>
-          <value lang="zh">香港会议展览中心</value>
+        <option key="30">
+          <value lang="en">Wuhan</value>
         </option>
-        <option key="236">
-          <value lang="en">P2联合创业办公社 中关村e世界</value>
-          <value lang="zh">P2联合创业办公社 中关村e世界</value>
+        <option key="31">
+          <value lang="en">Sydney</value>
+        </option>
+        <option key="32">
+          <value lang="en">Guangzhou</value>
+        </option>
+        <option key="33">
+          <value lang="en">SINGAPORE</value>
+        </option>
+        <option key="34">
+          <value lang="en">Madras</value>
+        </option>
+        <option key="35">
+          <value lang="en">BAGHDAD</value>
+        </option>
+        <option key="36">
+          <value lang="en">Pusan</value>
+        </option>
+        <option key="37">
+          <value lang="en">Los Angeles (CA)</value>
+        </option>
+        <option key="38">
+          <value lang="en">Yokohama</value>
+        </option>
+        <option key="39">
+          <value lang="en">DHAKA</value>
+        </option>
+        <option key="40">
+          <value lang="en">BERLIN</value>
+        </option>
+        <option key="41">
+          <value lang="en">Alexandria</value>
+        </option>
+        <option key="42">
+          <value lang="en">Bangalore</value>
+        </option>
+        <option key="43">
+          <value lang="en">Malang</value>
+        </option>
+        <option key="44">
+          <value lang="en">Hyderabad</value>
+        </option>
+        <option key="45">
+          <value lang="en">Chongqing</value>
+        </option>
+        <option key="46">
+          <value lang="en">Ho Chi Minh City</value>
+        </option>
+        <option key="47">
+          <value lang="en">Haerbin</value>
+        </option>
+        <option key="48">
+          <value lang="en">ANKARA</value>
+        </option>
+        <option key="49">
+          <value lang="en">BUENOS AIRES</value>
+        </option>
+        <option key="50">
+          <value lang="en">Chengdu</value>
+        </option>
+        <option key="51">
+          <value lang="en">Ahmedabad</value>
+        </option>
+        <option key="52">
+          <value lang="en">Casablanca</value>
+        </option>
+        <option key="53">
+          <value lang="en">Chicago (IL)</value>
+        </option>
+        <option key="54">
+          <value lang="en">Xian</value>
+        </option>
+        <option key="55">
+          <value lang="en">MADRID</value>
+        </option>
+        <option key="56">
+          <value lang="en">Surabaya</value>
+        </option>
+        <option key="57">
+          <value lang="en">PYONGYANG</value>
+        </option>
+        <option key="58">
+          <value lang="en">Nanjing</value>
+        </option>
+        <option key="59">
+          <value lang="en">KINSHASA</value>
+        </option>
+        <option key="60">
+          <value lang="en">ROMA</value>
+        </option>
+        <option key="61">
+          <value lang="en">Taipei</value>
+        </option>
+        <option key="62">
+          <value lang="en">Osaka</value>
+        </option>
+        <option key="63">
+          <value lang="en">KIEV</value>
+        </option>
+        <option key="64">
+          <value lang="en">YANGON</value>
+        </option>
+        <option key="65">
+          <value lang="en">Toronto</value>
+        </option>
+        <option key="66">
+          <value lang="en">Zibo</value>
+        </option>
+        <option key="67">
+          <value lang="en">Dalian</value>
+        </option>
+        <option key="68">
+          <value lang="en">Taegu</value>
+        </option>
+        <option key="69">
+          <value lang="en">ADDIS ABABA</value>
+        </option>
+        <option key="70">
+          <value lang="en">Jinan</value>
+        </option>
+        <option key="71">
+          <value lang="en">Salvador</value>
+        </option>
+        <option key="72">
+          <value lang="en">Inchon</value>
+        </option>
+        <option key="73">
+          <value lang="en">Semarang</value>
+        </option>
+        <option key="74">
+          <value lang="en">Giza</value>
+        </option>
+        <option key="75">
+          <value lang="en">Changchun</value>
+        </option>
+        <option key="76">
+          <value lang="en">Havanna</value>
+        </option>
+        <option key="77">
+          <value lang="en">Nagoya</value>
+        </option>
+        <option key="78">
+          <value lang="en">Belo Horizonte</value>
+        </option>
+        <option key="79">
+          <value lang="en">PARIS</value>
+        </option>
+        <option key="80">
+          <value lang="en">TASHKENT</value>
+        </option>
+        <option key="81">
+          <value lang="en">Fortaleza</value>
+        </option>
+        <option key="82">
+          <value lang="en">Sukabumi</value>
+        </option>
+        <option key="83">
+          <value lang="en">Cali</value>
+        </option>
+        <option key="84">
+          <value lang="en">Guayaquil</value>
+        </option>
+        <option key="85">
+          <value lang="en">Qingdao</value>
+        </option>
+        <option key="86">
+          <value lang="en">Izmir</value>
+        </option>
+        <option key="87">
+          <value lang="en">Cirebon</value>
+        </option>
+        <option key="88">
+          <value lang="en">Taiyuan</value>
+        </option>
+        <option key="89">
+          <value lang="en">BRASILIA</value>
+        </option>
+        <option key="90">
+          <value lang="en">BUCURESTI</value>
+        </option>
+        <option key="91">
+          <value lang="en">Faisalabad</value>
+        </option>
+        <option key="92">
+          <value lang="en">Quezon City</value>
+        </option>
+        <option key="93">
+          <value lang="en">Medan</value>
+        </option>
+        <option key="94">
+          <value lang="en">Houston (TX)</value>
+        </option>
+        <option key="95">
+          <value lang="en">Abidjan</value>
+        </option>
+        <option key="96">
+          <value lang="en">Mashhad</value>
+        </option>
+        <option key="97">
+          <value lang="en">Medellín</value>
+        </option>
+        <option key="98">
+          <value lang="en">Kanpur</value>
+        </option>
+        <option key="99">
+          <value lang="en">BUDAPEST</value>
+        </option>
+        <option key="100">
+          <value lang="en">CARACAS</value>
         </option>
       </origin>
     </attribute-type>
     <attribute-type id="time" syntax="1.3.6.1.4.1.1466.115.121.1.24">
       <name lang="en">Time</name>
       <name lang="zh">时间</name>
-      <name lang="es">Tiempo</name>
-      <name lang="ru">время</name>
-      <!-- keys used here are BinaryTime (RFC6019) for backward compatibility,
-           don't copy this behaviour when creating new assets -->
-      <origin as="mapping" bitmask="000000000000000000000000000000000000FFFFFFFF00000000000000000000">
-        <!-- $ TZ=Europe/Moscow date -d @1528988400 +%Y%m%d%H%M%S%z -->
-        <option key="1528988400">
-          <value>20180614180000+0300</value>
-        </option>
-        <!-- $ TZ=Europe/Moscow date -d @1529074800 +%Y%m%d%H%M%S%z -->
-        <option key="1529074800">
-          <value>20180615180000+0300</value>
-        </option>
-        <!-- $ TZ=Europe/Moscow date -d @1529420400 +%Y%m%d%H%M%S%z -->
-        <option key="1529420400">
-          <value>20180619180000+0300</value>
-        </option>
-        <!-- $ TZ=Europe/Moscow date -d @1529431200 +%Y%m%d%H%M%S%z -->
-        <option key="1529431200">
-          <value>20180619210000+0300</value>
-        </option>
-        <!-- $ TZ=Europe/Moscow date -d @1530900000 +%Y%m%d%H%M%S%z -->
-        <option key="1530900000">
-          <value>20180706210000+0300</value>
-        </option>
-        <!-- $ TZ=Europe/Moscow date -d @1531576800 +%Y%m%d%H%M%S%z -->
-        <option key="1531576800">
-          <value>20180714170000+0300</value>
-        </option>
-        <!-- For RISE conference in Hong Kong. The key is not UnixTime as UnixTime should be 1531299600
-         $ TZ=Asia/Hong_Kong date -d @1531299600 +%Y%m%d%H%M%S%z
-         20180711170000+0800--> 
-        <option key="1531328400">
-          <value>20180711090000+0800</value>
-        </option>
-      </origin>
+      <origin as="utf8" bitmask="00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000000"/>
     </attribute-type>
-    <attribute-type id="countryA" syntax="1.3.6.1.4.1.1466.115.121.1.26">
-      <!-- Intentionally avoid using countryName
-       (SYNTAX 1.3.6.1.4.1.1466.115.121.1.11) per RFC 4519
-           CountryName is two-characters long, not 3-characters.
-       -->
-      <name lang="en">Team A</name>
-      <name lang="zh">甲队</name>
-      <name lang="es">Equipo A</name>
-      <origin as="utf8" bitmask="00000000000000000000000000000000000000000000FFFFFF00000000000000"/>
-    </attribute-type>
-    <attribute-type id="countryB" syntax="1.3.6.1.4.1.1466.115.121.1.26">
-      <name lang="en">Team B</name>
-      <name lang="zh">乙队</name>
-      <name lang="es">Equipo B</name>
-      <origin as="utf8" bitmask="00000000000000000000000000000000000000000000000000FFFFFF00000000"/>
-    </attribute-type>
-    <attribute-type id="match" syntax="1.3.6.1.4.1.1466.115.121.1.27">
-      <name lang="en">Match</name>
-      <name lang="zh">场次</name>
-      <name lang="es">Evento</name>
-      <origin as="unsigned" bitmask="00000000000000000000000000000000000000000000000000000000FF000000"/>
+    <attribute-type id="numero" syntax="1.3.6.1.4.1.1466.115.121.1.27">
+      <name lang="en">No</name>
+      <name lang="zh">票号</name>
+      <origin as="unsigned" bitmask="0000000000000000000000000000000000000000FFFF00000000000000000000"/>
     </attribute-type>
     <attribute-type id="category" syntax="1.3.6.1.4.1.1466.115.121.1.15">
       <name lang="en">Cat</name>
       <name lang="zh">等级</name>
-      <name lang="es">Cat</name>
-      <origin as="mapping" bitmask="0000000000000000000000000000000000000000000000000000000000FF0000">
-        <option key="1">
-          <value lang="en">Category 1</value>
-          <value lang="zh">一类票</value>
-        </option>
-        <option key="2">
-          <value lang="en">Category 2</value>
-          <value lang="zh">二类票</value>
-        </option>
-        <option key="3">
-          <value lang="en">Category 3</value>
-          <value lang="zh">三类票</value>
-        </option>
-        <option key="4">
-          <value lang="en">Category 4</value>
-          <value lang="zh">四类票</value>
-        </option>
-        <option key="5">
-          <value lang="en">Match Club</value>
-          <value lang="zh">俱乐部坐席</value>
-        </option>
-        <option key="6">
-          <value lang="en">Match House Premier</value>
-          <value lang="zh">比赛之家坐席</value>
-        </option>
-        <option key="7">
-          <value lang="en">MATCH PAVILION</value>
-          <value lang="zh">款待大厅坐席</value>
-        </option>
-        <option key="8">
-          <value lang="en">MATCH BUSINESS SEAT</value>
-          <value lang="zh">商务坐席</value>
-        </option>
-        <option key="9">
-          <value lang="en">MATCH SHARED SUITE</value>
-          <value lang="zh">公共包厢</value>
-        </option>
-        <option key="10">
-          <value lang="en">TSARSKY LOUNGE</value>
-          <value lang="zh">特拉斯基豪华包厢</value>
-        </option>
-        <option key="11">
-          <value lang="en">MATCH PRIVATE SUITE</value>
-          <value lang="zh">私人包厢</value>
-        </option>
-        <option key="255">
-          <value lang="en">Singapore Blockchain Event</value>
-          <value lang="zh">新加坡区块链活动</value>
-        </option>
-        <option key="254">
-          <value lang="en">TECHNOLOGY RADAR SUMMIT 2018</value>
-          <value lang="zh">技术雷达峰会2018</value>
-        </option>
-        <option key="253">
-          <value lang="en">Sydney Blockchain Event</value>
-          <value lang="zh">悉尼区块链活动</value>
-        </option>
-        <option key="252">
-          <value lang="en">Beijing Blockchain Event</value>
-          <value lang="zh">北京区块链活动</value>
-        </option>
-        <option key="251">
-          <value lang="en">Shanghai Blockchain Event</value>
-          <value lang="zh">上海区块链活动</value>
-        </option>
-        <option key="250">
-          <value lang="en">Tokyo Blockchain Event</value>
-          <value lang="zh">东京区块链活动</value>
-        </option>
-        <option key="249">
-          <value lang="en">Blockchain Event</value>
-          <value lang="zh">区块链活动</value>
-        </option>
-        <option key="248">
-          <value lang="en">Other Events</value>
-          <value lang="zh">其他活动</value>
-        </option>
-        <option key="247">
-          <value lang="en">Seoul Blockchain Event</value>
-          <value lang="zh">首尔区块链活动</value>
-        </option>
-        <option key="246">
-          <value lang="en">Bangkok Blockchain Event</value>
-          <value lang="zh">曼谷区块链活动</value>
-        </option>
-        <option key="245">
-          <value lang="en">AlphaWallet Event</value>
-          <value lang="zh">AlphaWallet活动</value>
-        </option>
-        <option key="243">
-          <value lang="en">Stormbird Event</value>
-          <value lang="zh">Stormbird活动</value>
-        </option>
-        <option key="242">
-          <value lang="en">UNITY VENTURES Event</value>
-          <value lang="zh">九合创投活动</value>
-        </option>
-        <option key="241">
-          <value lang="en">Max's Event</value>
-          <value lang="zh">Max的活动</value>
-        </option>
-        <option key="240">
-          <value lang="en">Chongqing Blockchain Event</value>
-          <value lang="zh">重庆区块链活动</value>
-        </option>
-        <option key="239">
-          <value lang="en">Dubai Blockchain Event</value>
-          <value lang="zh">迪拜区块链活动</value>
-        </option>
-        <option key="238">
-          <value lang="en">Silicon Valley Blockchain Event</value>
-          <value lang="zh">硅谷区块链活动</value>
-        </option>
-        <option key="237">
-          <value lang="en">Melbourne Blockchain Event</value>
-          <value lang="zh">墨尔本区块链活动</value>
-        </option>
-        <option key="236">
-          <value lang="en">General Event</value>
-          <value lang="zh">通用活动</value>
-        </option>
-        <option key="235">
-          <value lang="en">AlphaWallet Meeting Slot</value>
-          <value lang="zh">AlphaWallet面议机会</value>
-        </option>
-        <option key="234">
-          <value lang="en">ERC875 Meetup</value>
-          <value lang="zh">ERC875线下聚会</value>
-        </option>
-      </origin>
+      <origin as="utf8" bitmask="00000000000000000000000000000000000000000000FFFFFFFFFF0000000000"/>
     </attribute-type>
-    <attribute-type id="numero" syntax="1.3.6.1.4.1.1466.115.121.1.27">
-      <name>№</name>
-      <origin as="unsigned" bitmask="000000000000000000000000000000000000000000000000000000000000FFFF"/>
+    <attribute-type id="section" syntax="1.3.6.1.4.1.1466.115.121.1.15">
+      <name lang="en">Section</name>
+      <name lang="zh">区号</name>
+      <origin as="utf8" bitmask="000000000000000000000000000000000000000000000000000000FFFFFFFFFF"/>
     </attribute-type>
     <attribute-type id="expired" syntax="1.3.6.1.4.1.1466.115.121.1.7">
       <origin contract="holding-contract">
@@ -746,6 +857,24 @@ bFTFAiBKJSQRqq66kI9yMPc1NJISGi8btpWfPiB78twtjuHe7A==
     <attribute-type id="gifted" syntax="1.3.6.1.4.1.1466.115.121.1.7">
       <origin contract="holding-contract">
         <function>isGifted</function>
+        <parameter>TokenID</parameter><!-- place holder - actual format undefined yet -->
+      </origin>
+    </attribute-type>
+    <attribute-type id="street" syntax="1.3.6.1.4.1.1466.115.121.1.7">
+      <origin contract="holding-contract">
+        <function>getStreet</function>
+        <parameter>TokenID</parameter><!-- place holder - actual format undefined yet -->
+      </origin>
+    </attribute-type>
+    <attribute-type id="building" syntax="1.3.6.1.4.1.1466.115.121.1.7">
+      <origin contract="holding-contract">
+        <function>getBuildingName</function>
+        <parameter>TokenID</parameter><!-- place holder - actual format undefined yet -->
+      </origin>
+    </attribute-type>
+    <attribute-type id="state" syntax="1.3.6.1.4.1.1466.115.121.1.7">
+      <origin contract="holding-contract">
+        <function>getState</function>
         <parameter>TokenID</parameter><!-- place holder - actual format undefined yet -->
       </origin>
     </attribute-type>
