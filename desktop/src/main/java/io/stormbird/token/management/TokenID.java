@@ -1,11 +1,10 @@
 package io.stormbird.token.management;
 
-import io.stormbird.token.entity.EthereumReadBuffer;
+import io.stormbird.token.management.CustomComponents.DateTimePicker;
 import io.stormbird.token.management.Model.ComboBoxDataModel;
 import io.stormbird.token.management.Model.ComboBoxSimpleItem;
 import io.stormbird.token.management.Model.TextFieldDataModel;
 import io.stormbird.token.management.Model.TokenViewModel;
-import org.web3j.utils.Convert;
 import org.web3j.utils.Numeric;
 import org.xml.sax.SAXException;
 
@@ -13,17 +12,16 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.*;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.Locale;
-import java.util.Map;
+import java.sql.Timestamp;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import org.web3j.crypto.*;
 
@@ -40,6 +38,9 @@ public class TokenID extends JFrame{
     JTextField fieldPrice;
     JTextField fieldPriceInMicroEth;
     JTextField fieldExpireTime;
+
+    JButton dateTimePickerExpireTime;
+    JComboBox timeZoneExpireTime;
 
     private static int ticketsNo=0;
     private static int magicLinkCount=0;
@@ -349,7 +350,16 @@ public class TokenID extends JFrame{
         gridy+=1;
         col1Constraints.gridy=col2Constraints.gridy=col3Constraints.gridy=col4Constraints.gridy=gridy;
         ticketsCreatePane.add(labelExpireTime,col1Constraints);
-        ticketsCreatePane.add(fieldExpireTime,col2Constraints);
+        JPanel dateTimePickerPane = new JPanel();
+        dateTimePickerPane.setLayout(new GridBagLayout());
+        dateTimePickerExpireTime = new DateTimePicker();
+        timeZoneExpireTime = new JComboBox();
+        initDatePicker(dateTimePickerPane, dateTimePickerExpireTime,timeZoneExpireTime);
+
+        ticketsCreatePane.add(dateTimePickerPane,col2Constraints);
+
+        fieldExpireTime.setVisible(false);
+        ticketsCreatePane.add(fieldExpireTime);
         gridy+=1;
         col1Constraints.gridy=col2Constraints.gridy=col3Constraints.gridy=col4Constraints.gridy=gridy;
         JButton btnCreateMagicLink = new JButton();
@@ -358,11 +368,16 @@ public class TokenID extends JFrame{
         btnCreateMagicLink.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                int size = comboBoxTickets.getItemCount();
-                if(size>0) {
-                    createMagicLink();
-                }else{
-                    JOptionPane.showMessageDialog(null, "Please add tokenid into ticket list first!",
+                try {
+                    int size = comboBoxTickets.getItemCount();
+                    if (size > 0) {
+                        createMagicLink();
+                    } else {
+                        JOptionPane.showMessageDialog(null, "Please add tokenid into ticket list first!",
+                                "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }catch (Exception ex){
+                    JOptionPane.showMessageDialog(null, ex.getMessage(),
                             "Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
@@ -379,6 +394,110 @@ public class TokenID extends JFrame{
 
     }
 
+    private void initDatePicker(final JPanel dateTimePickerPane,JButton dateTimePicker,JComboBox comboBoxTimezone){
+        GridBagConstraints col1Constraints = new GridBagConstraints();
+        col1Constraints.fill = GridBagConstraints.BOTH;
+        col1Constraints.anchor=GridBagConstraints.CENTER;
+        col1Constraints.weightx=0.7;
+        col1Constraints.gridwidth=1;
+        col1Constraints.gridx = 0;
+        col1Constraints.gridy = 0;
+        GridBagConstraints col2Constraints = new GridBagConstraints();
+        col2Constraints.fill = GridBagConstraints.BOTH;
+        col2Constraints.anchor=GridBagConstraints.CENTER;
+        col2Constraints.weightx=0.3;
+        col2Constraints.gridwidth=1;
+        col2Constraints.gridx = 1;
+        col2Constraints.gridy = 0;
+
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("-1200","-1200"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("-1100","-1100"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("-1000","-1000"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("-0930","-0930"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("-0900","-0900"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("-0800","-0800"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("-0700","-0700"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("-0600","-0600"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("-0500","-0500"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("-0400","-0400"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("-0330","-0330"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("-0300","-0300"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("-0200","-0200"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("-0100","-0100"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("+0000","+0000"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("+0100","+0100"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("+0200","+0200"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("+0300","+0300"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("+0330","+0330"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("+0400","+0400"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("+0430","+0430"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("+0500","+0500"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("+0530","+0530"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("+0600","+0600"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("+0630","+0630"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("+0700","+0700"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("+0800","+0800"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("+0845","+0845"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("+0900","+0900"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("+0930","+0930"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("+1000","+1000"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("+1030","+1030"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("+1100","+1100"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("+1200","+1200"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("+1245","+1245"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("+1300","+1300"));
+        comboBoxTimezone.addItem(new ComboBoxSimpleItem("+1400","+1400"));
+        Calendar now = Calendar.getInstance();
+        TimeZone timeZone = now.getTimeZone();
+        //timeZone = TimeZone.getTimeZone("America/Caracas")
+        String currentTimezone="";
+
+        int offset = timeZone.getRawOffset();
+        int offsetHrs = offset / 1000 / 60 / 60;
+        int offsetMins = offset / 1000 / 60 % 60;
+        String offsetHrsStr,offsetMinsStr="00";
+        if(offsetHrs>-10||offset<10){
+            if(offset<0) {
+                offsetHrsStr = String.format("-0%d", (0-offsetHrs));
+            }else{
+                offsetHrsStr = String.format("+0%d",offsetHrs);
+            }
+        }else{
+            if(offset<0) {
+                offsetHrsStr = String.format("-%d", (0-offsetHrs));
+            }else{
+                offsetHrsStr = String.format("+%d",offsetHrs);
+            }
+        }
+        if(offsetMins<0){
+            offsetMinsStr=String.valueOf((0-offsetMins));
+        }else if(offsetMins>0){
+            offsetMinsStr=String.valueOf(offsetMins);
+        }
+        currentTimezone = String.format("%s%s", offsetHrsStr,offsetMinsStr);
+        //comboBoxTimezone.setSelectedItem(new ComboBoxSimpleItem(currentTimezone,currentTimezone));
+        setSelectedItem(currentTimezone,comboBoxTimezone);
+//        comboBoxTimezone.addItemListener(new ItemListener() {
+//                                             public void itemStateChanged(ItemEvent e) {
+//                                                 ComboBoxSimpleItem item = (ComboBoxSimpleItem)e.getItem();
+//                                                 expireTimezone = item.getKey();
+//                                             }
+//                                         });
+        dateTimePickerPane.add(dateTimePicker,col1Constraints);
+        dateTimePickerPane.add(comboBoxTimezone,col2Constraints);
+    }
+    public void setSelectedItem(String key,JComboBox comboBox) {
+        int index = -1;
+        for (int i = 0; i < comboBox.getItemCount(); i++) {
+            ComboBoxSimpleItem item = (ComboBoxSimpleItem)comboBox.getItemAt(i);
+            if (key.equals(item.getKey())) {
+                index = i;
+                comboBox.setSelectedItem(item);
+                break;
+            }
+        }
+
+    }
     private void updateEncodedValueMap(String name, BigInteger value,boolean isUpdateTokenID){
         encodedValueMap.put(name,value);
         if(isUpdateTokenID){
@@ -397,7 +516,7 @@ public class TokenID extends JFrame{
         }
         this.fieldTokenID.setText(tokenidStr.toUpperCase());
     }
-    private void createMagicLink(){
+    private void createMagicLink() throws ParseException {
         magicLinkCount+=1;
         GridBagConstraints col1Constraints = new GridBagConstraints();
         col1Constraints.fill = GridBagConstraints.BOTH;
@@ -424,9 +543,13 @@ public class TokenID extends JFrame{
             ComboBoxSimpleItem item = (ComboBoxSimpleItem)comboBoxTickets.getItemAt(i);
             tickets[i]=new BigInteger(item.getValue(),16);
         }
-
+        //
         BigInteger price=(new BigInteger(fieldPriceInMicroEth.getText()));
-        BigInteger expiryTimestamp=new BigInteger(fieldExpireTime.getText());
+        DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZZZZ");
+        ComboBoxSimpleItem item = (ComboBoxSimpleItem)timeZoneExpireTime.getSelectedItem();
+        String dateStr = String.format("%s%s",dateTimePickerExpireTime.getText(),item.getKey());
+        Date date = df.parse(dateStr);
+        BigInteger expiryTimestamp=BigInteger.valueOf(date.getTime()/1000);
         String contractAddress=fieldContractAddress.getText();
         String privateKey=fieldPrivateKey.getText();
         BigInteger privateKeyofOrganizer=new BigInteger(privateKey,16);
