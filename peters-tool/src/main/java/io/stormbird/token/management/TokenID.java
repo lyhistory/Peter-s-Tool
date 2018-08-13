@@ -17,7 +17,6 @@ import java.io.InputStream;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -27,42 +26,40 @@ import org.web3j.crypto.*;
 
 
 public class TokenID extends JFrame{
-    private JSplitPane splitPane;
-    private JPanel contentPane;
-    private JPanel resultPane;
+    private JSplitPane mainSplitPane;
+    private JPanel mainSplitPane_upperPane;
+    private JScrollPane mainSplitPane_lowerPane;
+    private JPanel lowerPane_container;
+
+    //components in upperPane
     private JTextField fieldTokenID;
-    JComboBox comboBoxTickets;
-    JPanel resultControlPane;
-    JTextField fieldPrivateKey;
-    JTextField fieldContractAddress;
-    JTextField fieldPrice;
-    JTextField fieldPriceInMicroEth;
-    JTextField fieldExpireTime;
 
-    JButton dateTimePickerExpireTime;
-    JComboBox timeZoneExpireTime;
+    //components in lowerPane
+    private JComboBox comboBoxTickets;
+    private JTextField fieldPrivateKey;
+    private JTextField fieldContractAddress;
+    private JTextField fieldPrice;
+    private JTextField fieldPriceInMicroEth;
+    private JButton dateTimePickerExpireTime;
+    private JComboBox timeZoneExpireTime;
 
-    private static int ticketsNo=0;
     private static int magicLinkCount=0;
 
     public InputStream ticketXML = getClass().getResourceAsStream("/TicketingContract.xml");
-
     private static Map<String,BigInteger> encodedValueMap=new ConcurrentHashMap<>();
-
     private TokenViewModel tokenViewModel;
+
     public TokenID(){
         try {
             tokenViewModel=new TokenViewModel(ticketXML, Locale.getDefault());
-            splitPane = new JSplitPane();
-            contentPane = new JPanel();
-            addComponentsToContentPane(contentPane);
-            contentPane.setLayout(new BoxLayout(contentPane, BoxLayout.Y_AXIS));
-            resultPane = new JPanel();
-            resultPane.setLayout(new BoxLayout(resultPane, BoxLayout.Y_AXIS));
-            initResultPane(resultPane);
-            splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT,contentPane,resultPane);
-            splitPane.setMinimumSize(new Dimension(400,300));
-            this.setContentPane(splitPane);
+            mainSplitPane_upperPane = new JPanel();
+            mainSplitPane_upperPane.setLayout(new BoxLayout(mainSplitPane_upperPane, BoxLayout.Y_AXIS));
+            initUpperPane(mainSplitPane_upperPane);
+
+            initLowerPane();
+
+            mainSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, mainSplitPane_upperPane, mainSplitPane_lowerPane);
+            this.setContentPane(mainSplitPane);
             this.setTitle("TokenID Generator");
             this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             this.setLocationByPlatform(true);
@@ -77,11 +74,11 @@ public class TokenID extends JFrame{
         (new TokenID()).setVisible(true);
     }
 
-    private  void initResultPane(final Container pane){
+    private  void initLowerPane(){
         GridBagConstraints col1Constraints = new GridBagConstraints();
         col1Constraints.fill = GridBagConstraints.BOTH;
         col1Constraints.anchor=GridBagConstraints.CENTER;
-        col1Constraints.ipadx=10;col1Constraints.ipady=10;
+        col1Constraints.ipadx=10;col1Constraints.ipady=0;
         col1Constraints.weightx=0.5;
         col1Constraints.gridwidth=1;
         col1Constraints.gridx = 0;
@@ -89,30 +86,27 @@ public class TokenID extends JFrame{
         GridBagConstraints col2Constraints = new GridBagConstraints();
         col2Constraints.fill = GridBagConstraints.BOTH;
         col2Constraints.anchor=GridBagConstraints.CENTER;
-        col2Constraints.ipadx=10;col2Constraints.ipady=10;
+        col2Constraints.ipadx=10;col2Constraints.ipady=0;
         col2Constraints.weightx=0.5;
         col2Constraints.gridwidth=1;
         col2Constraints.gridx = 1;
         col2Constraints.gridy = magicLinkCount;
-
-        resultControlPane = new JPanel();
-        resultControlPane.setMinimumSize(new Dimension(400,300));
-        resultControlPane.setBorder(new EmptyBorder(10, 10, 10, 10));
-        resultControlPane.setLayout(new GridBagLayout());
+        lowerPane_container = new JPanel();
+        lowerPane_container.setLayout(new BoxLayout(lowerPane_container, BoxLayout.Y_AXIS));
+        lowerPane_container.setMinimumSize(new Dimension(0,300));
+        lowerPane_container.setBorder(new EmptyBorder(10, 10, 10, 10));
+        lowerPane_container.setLayout(new GridBagLayout());
         final JLabel label1 = new JLabel();
         label1.setText("Token ID");
-        resultControlPane.add(label1,col1Constraints);
+        lowerPane_container.add(label1,col1Constraints);
         final JLabel label2 = new JLabel();
         label2.setText("Magic Link");
-        resultControlPane.add(label2,col2Constraints);
-        resultControlPane.setAutoscrolls(true);
-        JScrollPane scrollPane = new JScrollPane(resultControlPane);
-        scrollPane.setMinimumSize(new Dimension(400,300));
-        pane.add(scrollPane,BorderLayout.CENTER);
-        pane.revalidate();
-        pane.repaint();
+        lowerPane_container.add(label2,col2Constraints);
+        //lowerPane_container.setAutoscrolls(true);
+        mainSplitPane_lowerPane = new JScrollPane(lowerPane_container);
+        mainSplitPane_lowerPane.setMinimumSize(new Dimension(0,300));
     }
-    private  void addComponentsToContentPane(final Container pane){
+    private  void initUpperPane(final Container pane){
         int gridy=0;
         GridBagConstraints col1Constraints = new GridBagConstraints();
         col1Constraints.fill = GridBagConstraints.BOTH;
@@ -320,7 +314,6 @@ public class TokenID extends JFrame{
         fieldPriceInMicroEth = new JTextField();
         JLabel labelExpireTime = new JLabel();
         labelExpireTime.setText("Expire Time");
-        fieldExpireTime = new JTextField();
         ticketsCreatePane.add(lablePrice,col1Constraints);
         ticketsCreatePane.add(fieldPrice,col2Constraints);
         JLabel lablePriceInMicroEth = new JLabel();
@@ -358,8 +351,6 @@ public class TokenID extends JFrame{
 
         ticketsCreatePane.add(dateTimePickerPane,col2Constraints);
 
-        fieldExpireTime.setVisible(false);
-        ticketsCreatePane.add(fieldExpireTime);
         gridy+=1;
         col1Constraints.gridy=col2Constraints.gridy=col3Constraints.gridy=col4Constraints.gridy=gridy;
         JButton btnCreateMagicLink = new JButton();
@@ -570,22 +561,22 @@ public class TokenID extends JFrame{
         for(int i=0;i<comboBoxTickets.getItemCount();++i){
             comboBox.addItem(comboBoxTickets.getItemAt(i));
         }
-        resultControlPane.add(comboBox,col1Constraints);
+        lowerPane_container.add(comboBox,col1Constraints);
         JTextArea textArea = new JTextArea(magicLinkSB.toString());
         textArea.setEditable(false);
         textArea.setLineWrap(true);
         textArea.setWrapStyleWord(true);
         JScrollPane scrollPane = new JScrollPane(textArea);
-        //textArea.setText();
-        resultControlPane.add(scrollPane,col2Constraints);
-        resultControlPane.revalidate();
-        resultControlPane.repaint();
-        resultPane.revalidate();
-        resultPane.repaint();
-        splitPane.revalidate();
-        splitPane.repaint();
+        lowerPane_container.add(scrollPane,col2Constraints);
+        lowerPane_container.revalidate();
+        lowerPane_container.repaint();
+        mainSplitPane_lowerPane.revalidate();
+        mainSplitPane_lowerPane.repaint();
+        mainSplitPane.revalidate();
+        mainSplitPane.repaint();
         this.revalidate();
         this.repaint();
+        this.pack();
     }
     public byte[] covertSigToByte(Sign.SignatureData ecSig)
     {
