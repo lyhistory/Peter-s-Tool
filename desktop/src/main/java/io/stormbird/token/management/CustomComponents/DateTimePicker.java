@@ -21,28 +21,24 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import javax.swing.JButton;
-import javax.swing.JDialog;
-import javax.swing.JPanel;
-import javax.swing.JLabel;
-import javax.swing.JSpinner;
+import javax.swing.*;
 import javax.swing.JSpinner.NumberEditor;
-import javax.swing.SpinnerNumberModel;
-import javax.swing.SwingUtilities;
-import javax.swing.SwingConstants;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.ChangeEvent;
 import javax.swing.border.LineBorder;
 
 public class DateTimePicker extends JButton {
     private DateChooser dateChooser = null;
-
+    private JTextField relatedTextField;
     private String preLabel = "";
 
     public DateTimePicker() {
         this(getNowDate());
     }
-
+    public DateTimePicker(JTextField relatedTextField) {
+        this(getNowDate());
+        this.relatedTextField=relatedTextField;
+    }
     public DateTimePicker(SimpleDateFormat df, String dateString) {
         this();
         setText(df, dateString);
@@ -98,7 +94,11 @@ public class DateTimePicker extends JButton {
     }
 
     public void setDate(Date date) {
-        super.setText(preLabel + getDefaultDateFormat().format(date));
+        String result=preLabel + getDefaultDateFormat().format(date);
+        super.setText(result);
+        if(this.relatedTextField!=null) {
+            this.relatedTextField.setText(result);
+        }
     }
 
     public Date getDate() {
@@ -110,8 +110,8 @@ public class DateTimePicker extends JButton {
         }
     }
 
-    public void addActionListener(ActionListener listener) {
-    }
+//    public void addActionListener(ActionListener listener) {
+//    }
 
     private class DateChooser extends JPanel implements ActionListener,
             ChangeListener {

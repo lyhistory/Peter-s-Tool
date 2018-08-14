@@ -10,6 +10,8 @@ import org.xml.sax.SAXException;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.IOException;
@@ -24,7 +26,19 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import org.web3j.crypto.*;
 
-
+/**
+ * Layout::
+ * mainSplitPane
+ * 	mainSplitPane_upperPane
+ * 		controlsPane[CENTER]
+ * 		ticketsCreateControlPane[SOUTH]
+ *
+ * 	mainSplitPane_lowerPane(scrollPane)
+ * 		mainSplitPane_lowerPane_
+ * 			resultControlPane
+ * 				titleLable1	titleLable2
+ * 				comboBox	scrollPane/normalPane/textPane
+ */
 public class TokenID extends JFrame{
     private JSplitPane mainSplitPane;
     private JPanel mainSplitPane_upperPane;
@@ -33,7 +47,8 @@ public class TokenID extends JFrame{
 
     //components in upperPane
     private JTextField fieldTokenID;
-
+    private JButton dateTimePickerTime;
+    private JComboBox timeZoneTime;
     //components in lowerPane
     private JComboBox comboBoxTickets;
     private JTextField fieldPrivateKey;
@@ -52,12 +67,9 @@ public class TokenID extends JFrame{
     public TokenID(){
         try {
             tokenViewModel=new TokenViewModel(ticketXML, Locale.getDefault());
-            mainSplitPane_upperPane = new JPanel();
-            mainSplitPane_upperPane.setLayout(new BoxLayout(mainSplitPane_upperPane, BoxLayout.Y_AXIS));
-            initUpperPane(mainSplitPane_upperPane);
 
+            initUpperPane();
             initLowerPane();
-
             mainSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, mainSplitPane_upperPane, mainSplitPane_lowerPane);
             this.setContentPane(mainSplitPane);
             this.setTitle("TokenID Generator");
@@ -74,39 +86,30 @@ public class TokenID extends JFrame{
         (new TokenID()).setVisible(true);
     }
 
-    private  void initLowerPane(){
-        GridBagConstraints col1Constraints = new GridBagConstraints();
-        col1Constraints.fill = GridBagConstraints.BOTH;
-        col1Constraints.anchor=GridBagConstraints.CENTER;
-        col1Constraints.ipadx=10;col1Constraints.ipady=0;
-        col1Constraints.weightx=0.5;
-        col1Constraints.gridwidth=1;
-        col1Constraints.gridx = 0;
-        col1Constraints.gridy = magicLinkCount;
-        GridBagConstraints col2Constraints = new GridBagConstraints();
-        col2Constraints.fill = GridBagConstraints.BOTH;
-        col2Constraints.anchor=GridBagConstraints.CENTER;
-        col2Constraints.ipadx=10;col2Constraints.ipady=0;
-        col2Constraints.weightx=0.5;
-        col2Constraints.gridwidth=1;
-        col2Constraints.gridx = 1;
-        col2Constraints.gridy = magicLinkCount;
-        lowerPane_container = new JPanel();
-        lowerPane_container.setLayout(new BoxLayout(lowerPane_container, BoxLayout.Y_AXIS));
-        lowerPane_container.setMinimumSize(new Dimension(0,300));
-        lowerPane_container.setBorder(new EmptyBorder(10, 10, 10, 10));
-        lowerPane_container.setLayout(new GridBagLayout());
-        final JLabel label1 = new JLabel();
-        label1.setText("Token ID");
-        lowerPane_container.add(label1,col1Constraints);
-        final JLabel label2 = new JLabel();
-        label2.setText("Magic Link");
-        lowerPane_container.add(label2,col2Constraints);
-        //lowerPane_container.setAutoscrolls(true);
-        mainSplitPane_lowerPane = new JScrollPane(lowerPane_container);
-        mainSplitPane_lowerPane.setMinimumSize(new Dimension(0,300));
+    private  void onDatePickerChange(JTextField textFieldEncodedValue,int shift,BigInteger bitmask,boolean isUpdateTokenID) {
+        try{
+            BigInteger encodedValue = BigInteger.valueOf(0);
+            DateFormat displayFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZZZZ");
+            DateFormat targetFormat = new SimpleDateFormat("yyyyMMddHHmmssZZZZ");
+            ComboBoxSimpleItem item = (ComboBoxSimpleItem)timeZoneTime.getSelectedItem();
+            String dateStr = String.format("%s%s",dateTimePickerTime.getText(),item.getKey());
+            Date date = displayFormat.parse(dateStr);
+            String targetTimeStr = targetFormat.format(date);
+            if (targetTimeStr != null && targetTimeStr.length() > 0) {
+                byte[] bytes = targetTimeStr.getBytes(Charset.forName("UTF-8"));
+                encodedValue = new BigInteger(bytes);
+                encodedValue = encodedValue.shiftLeft(shift).and(bitmask);
+            }
+            textFieldEncodedValue.setText(encodedValue.toString(16).toUpperCase());
+            updateEncodedValueMap(textFieldEncodedValue.getName(), encodedValue, isUpdateTokenID);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(null, "Something wrong!",
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
-    private  void initUpperPane(final Container pane){
+    private  void initUpperPane(){
+        mainSplitPane_upperPane = new JPanel();
+        mainSplitPane_upperPane.setLayout(new BoxLayout(mainSplitPane_upperPane, BoxLayout.Y_AXIS));
         int gridy=0;
         GridBagConstraints col1Constraints = new GridBagConstraints();
         col1Constraints.fill = GridBagConstraints.BOTH;
@@ -198,39 +201,74 @@ public class TokenID extends JFrame{
             JLabel labelType = new JLabel();
             labelType.setText(model.type);
             controlsPane.add(labelType,col2Constraints);
+
             JTextField textFieldEncodedValue = new JTextField();
             textFieldEncodedValue.setName(model.id);
             textFieldEncodedValue.setEditable(false);
             textFieldEncodedValue.setEnabled(true);
-            JTextField textFieldInput = new JTextField();
-            textFieldInput.setEditable(true);
-            textFieldInput.setEnabled(true);
-            textFieldInput.addKeyListener(new KeyAdapter() {
-                public void keyReleased(KeyEvent e) {
-                    try {
-                        BigInteger encodedValue = BigInteger.valueOf(0);
-                        String inputStr = textFieldInput.getText().toString();
-                        if (inputStr != null && inputStr.length() > 0) {
-                            if (model.as.equals("UTF8")) {
-                                byte[] bytes = inputStr.getBytes(Charset.forName("UTF-8"));
-                                encodedValue = new BigInteger(bytes);
-                            } else if (model.as.equals("Unsigned")) {
-                                encodedValue = new BigInteger(inputStr);
-                            }
-                            encodedValue = encodedValue.shiftLeft(model.getBitshift()).and(model.getBitmask());
-                        }
-                        textFieldEncodedValue.setText(encodedValue.toString(16).toUpperCase());
-                        updateEncodedValueMap(textFieldEncodedValue.getName(),encodedValue,true);
-                    }catch (Exception ex){
-                        JOptionPane.showMessageDialog(null, "Invalid Data Type! Please check the type",
-                                "Error", JOptionPane.ERROR_MESSAGE);
-                        textFieldInput.setText("");
-                        textFieldInput.requestFocusInWindow();
-                    }
-                }
-            });
-            controlsPane.add(textFieldInput,col3Constraints);
 
+            if(model.id.equals("time")) {
+                JTextField textFieldHiddenValue = new JTextField();
+                textFieldHiddenValue.setVisible(false);
+                textFieldHiddenValue.getDocument().addDocumentListener(new DocumentListener() {
+                    public void changedUpdate(DocumentEvent e) {
+                        warn();
+                    }
+                    public void removeUpdate(DocumentEvent e) {
+                        warn();
+                    }
+                    public void insertUpdate(DocumentEvent e) {
+                        warn();
+                    }
+                    public void warn() {
+                        onDatePickerChange(textFieldEncodedValue,model.getBitshift(),model.getBitmask(),true);
+                    }
+                });
+                JPanel dateTimePickerPane = new JPanel();
+                dateTimePickerPane.setLayout(new GridBagLayout());
+                dateTimePickerTime = new DateTimePicker(textFieldHiddenValue);
+                timeZoneTime = new JComboBox();
+                createDatePicker(dateTimePickerPane, dateTimePickerTime,timeZoneTime);
+                controlsPane.add(dateTimePickerPane, col3Constraints);
+                timeZoneTime.addItemListener(new ItemListener() {
+                    @Override
+                    public void itemStateChanged(ItemEvent e) {
+                        onDatePickerChange(textFieldEncodedValue,model.getBitshift(),model.getBitmask(),true);
+                    }
+                });
+
+                onDatePickerChange(textFieldEncodedValue,model.getBitshift(),model.getBitmask(),false);
+
+            }else{
+                JTextField textFieldInput = new JTextField();
+                textFieldInput.setEditable(true);
+                textFieldInput.setEnabled(true);
+                textFieldInput.addKeyListener(new KeyAdapter() {
+                    public void keyReleased(KeyEvent e) {
+                        try {
+                            BigInteger encodedValue = BigInteger.valueOf(0);
+                            String inputStr = textFieldInput.getText().toString();
+                            if (inputStr != null && inputStr.length() > 0) {
+                                if (model.as.equals("UTF8")) {
+                                    byte[] bytes = inputStr.getBytes(Charset.forName("UTF-8"));
+                                    encodedValue = new BigInteger(bytes);
+                                } else if (model.as.equals("Unsigned")) {
+                                    encodedValue = new BigInteger(inputStr);
+                                }
+                                encodedValue = encodedValue.shiftLeft(model.getBitshift()).and(model.getBitmask());
+                            }
+                            textFieldEncodedValue.setText(encodedValue.toString(16).toUpperCase());
+                            updateEncodedValueMap(textFieldEncodedValue.getName(), encodedValue, true);
+                        } catch (Exception ex) {
+                            JOptionPane.showMessageDialog(null, "Invalid Data Type! Please check the type",
+                                    "Error", JOptionPane.ERROR_MESSAGE);
+                            textFieldInput.setText("");
+                            textFieldInput.requestFocusInWindow();
+                        }
+                    }
+                });
+                controlsPane.add(textFieldInput, col3Constraints);
+            }
             controlsPane.add(textFieldEncodedValue,col4Constraints);
         }
 
@@ -267,11 +305,11 @@ public class TokenID extends JFrame{
         });
         controlsPane.add(buttonAddToTicketList,col4Constraints);
         //controlsPane.add(btnCreateMagicLink,col4Constraints);
-        pane.add(controlsPane,BorderLayout.CENTER);
+        mainSplitPane_upperPane.add(controlsPane,BorderLayout.CENTER);
         /*
          * tickets creation Panel
          */
-        pane.add(new JSeparator());
+        controlsPane.add(new JSeparator());
         //
         //
         JPanel ticketsCreateControlPane = new JPanel();
@@ -291,11 +329,12 @@ public class TokenID extends JFrame{
         JPanel ticketsCreatePane = new JPanel();
         ticketsCreatePane.setBorder(new EmptyBorder(10, 10, 10, 10));
         ticketsCreatePane.setLayout(new GridBagLayout());
-        col1Constraints.weightx=col3Constraints.weightx=0.2;
-        col2Constraints.weightx=col4Constraints.weightx=0.6;
+        col1Constraints.weightx= 0.2;
+        col2Constraints.weightx=0.7;
+        col3Constraints.weightx=0.2;
+        col4Constraints.weightx=0.7;
         gridy+=1;
         col1Constraints.gridy=col2Constraints.gridy=col3Constraints.gridy=col4Constraints.gridy=gridy;
-        col2Constraints.weightx=0.5;
         JLabel lablePrivateKey = new JLabel();
         lablePrivateKey.setText("Private Key");
         fieldPrivateKey = new JTextField();
@@ -347,8 +386,7 @@ public class TokenID extends JFrame{
         dateTimePickerPane.setLayout(new GridBagLayout());
         dateTimePickerExpireTime = new DateTimePicker();
         timeZoneExpireTime = new JComboBox();
-        initDatePicker(dateTimePickerPane, dateTimePickerExpireTime,timeZoneExpireTime);
-
+        createDatePicker(dateTimePickerPane, dateTimePickerExpireTime,timeZoneExpireTime);
         ticketsCreatePane.add(dateTimePickerPane,col2Constraints);
 
         gridy+=1;
@@ -373,19 +411,82 @@ public class TokenID extends JFrame{
                 }
             }
         });
-        ticketsCreatePane.add(btnCreateMagicLink,col3Constraints);
+        ticketsCreatePane.add(btnCreateMagicLink,col4Constraints);
         ticketsCreateControlPane.add(ticketsCreatePane,BorderLayout.CENTER);
-        pane.add(ticketsCreateControlPane,BorderLayout.SOUTH);
+        mainSplitPane_upperPane.add(ticketsCreateControlPane,BorderLayout.SOUTH);
         //
         //pane.add(bottomPane,BorderLayout.SOUTH);
 
         updateTokenIDField();
-        pane.revalidate();
-        pane.repaint();
+//        mainSplitPane_upperPane.revalidate();
+//        mainSplitPane_upperPane.repaint();
+
+    }
+    private  void initLowerPane(){
+        GridBagConstraints col1Constraints = new GridBagConstraints();
+        col1Constraints.fill = GridBagConstraints.BOTH;
+        col1Constraints.anchor=GridBagConstraints.CENTER;
+        col1Constraints.ipadx=10;col1Constraints.ipady=0;
+        col1Constraints.weightx=0.5;
+        col1Constraints.gridwidth=1;
+        col1Constraints.gridx = 0;
+        col1Constraints.gridy = magicLinkCount;
+        GridBagConstraints col2Constraints = new GridBagConstraints();
+        col2Constraints.fill = GridBagConstraints.BOTH;
+        col2Constraints.anchor=GridBagConstraints.CENTER;
+        col2Constraints.ipadx=10;col2Constraints.ipady=0;
+        col2Constraints.weightx=0.5;
+        col2Constraints.gridwidth=1;
+        col2Constraints.gridx = 1;
+        col2Constraints.gridy = magicLinkCount;
+        lowerPane_container = new JPanel();
+        lowerPane_container.setLayout(new BoxLayout(lowerPane_container, BoxLayout.Y_AXIS));
+        lowerPane_container.setMinimumSize(new Dimension(0,300));
+        lowerPane_container.setBorder(new EmptyBorder(10, 10, 10, 10));
+        lowerPane_container.setLayout(new GridBagLayout());
+        final JLabel label1 = new JLabel();
+        label1.setText("Token ID");
+        lowerPane_container.add(label1,col1Constraints);
+        final JLabel label2 = new JLabel();
+        label2.setText("Magic Link");
+        lowerPane_container.add(label2,col2Constraints);
+        //lowerPane_container.setAutoscrolls(true);
+        mainSplitPane_lowerPane = new JScrollPane(lowerPane_container);
+        mainSplitPane_lowerPane.setMinimumSize(new Dimension(0,300));
+    }
+
+    private void updateEncodedValueMap(String name, BigInteger value,boolean isUpdateTokenID){
+        encodedValueMap.put(name,value);
+        if(isUpdateTokenID){
+            updateTokenIDField();
+        }
+    }
+    private void updateTokenIDField(){
+        String tokenidStr="";
+        BigInteger tokenid=BigInteger.valueOf(0);
+        for(String key:encodedValueMap.keySet()){
+            tokenid=tokenid.or(encodedValueMap.get(key));
+        }
+        tokenidStr=tokenid.toString(16);
+        while (tokenidStr.length() < 64) {
+            tokenidStr = "0" + tokenidStr;
+        }
+        this.fieldTokenID.setText(tokenidStr.toUpperCase());
+    }
+    private void setSelectedItem(String key,JComboBox comboBox) {
+        int index = -1;
+        for (int i = 0; i < comboBox.getItemCount(); i++) {
+            ComboBoxSimpleItem item = (ComboBoxSimpleItem)comboBox.getItemAt(i);
+            if (key.equals(item.getKey())) {
+                index = i;
+                comboBox.setSelectedItem(item);
+                break;
+            }
+        }
 
     }
 
-    private void initDatePicker(final JPanel dateTimePickerPane,JButton dateTimePicker,JComboBox comboBoxTimezone){
+    private void createDatePicker(final JPanel dateTimePickerPane, JButton dateTimePicker, JComboBox comboBoxTimezone){
         GridBagConstraints col1Constraints = new GridBagConstraints();
         col1Constraints.fill = GridBagConstraints.BOTH;
         col1Constraints.anchor=GridBagConstraints.CENTER;
@@ -477,36 +578,7 @@ public class TokenID extends JFrame{
         dateTimePickerPane.add(dateTimePicker,col1Constraints);
         dateTimePickerPane.add(comboBoxTimezone,col2Constraints);
     }
-    public void setSelectedItem(String key,JComboBox comboBox) {
-        int index = -1;
-        for (int i = 0; i < comboBox.getItemCount(); i++) {
-            ComboBoxSimpleItem item = (ComboBoxSimpleItem)comboBox.getItemAt(i);
-            if (key.equals(item.getKey())) {
-                index = i;
-                comboBox.setSelectedItem(item);
-                break;
-            }
-        }
 
-    }
-    private void updateEncodedValueMap(String name, BigInteger value,boolean isUpdateTokenID){
-        encodedValueMap.put(name,value);
-        if(isUpdateTokenID){
-            updateTokenIDField();
-        }
-    }
-    private void updateTokenIDField(){
-        String tokenidStr="";
-        BigInteger tokenid=BigInteger.valueOf(0);
-        for(String key:encodedValueMap.keySet()){
-            tokenid=tokenid.or(encodedValueMap.get(key));
-        }
-        tokenidStr=tokenid.toString(16);
-        while (tokenidStr.length() < 64) {
-            tokenidStr = "0" + tokenidStr;
-        }
-        this.fieldTokenID.setText(tokenidStr.toUpperCase());
-    }
     private void createMagicLink() throws ParseException {
         magicLinkCount+=1;
         GridBagConstraints col1Constraints = new GridBagConstraints();
@@ -545,7 +617,7 @@ public class TokenID extends JFrame{
         String privateKey=fieldPrivateKey.getText();
         BigInteger privateKeyofOrganizer=new BigInteger(privateKey,16);
         byte[] linkData = encodeMessageForSpawning(price,expiryTimestamp,tickets,contractAddress);
-        Sign.SignatureData signedData = signUniversalLinks(linkData,privateKeyofOrganizer);
+        Sign.SignatureData signedData = signMagicLink(linkData,privateKeyofOrganizer);
         byte[] signature=covertSigToByte(signedData);
         byte[] completeLink = new byte[linkData.length + signature.length];
         System.arraycopy(linkData, 0, completeLink, 0, linkData.length);
@@ -566,18 +638,28 @@ public class TokenID extends JFrame{
         textArea.setEditable(false);
         textArea.setLineWrap(true);
         textArea.setWrapStyleWord(true);
-        JScrollPane scrollPane = new JScrollPane(textArea);
+        //JScrollPane scrollPane = new JScrollPane(textArea);
+        //lowerPane_container.add(textArea,col2Constraints);
+        JTextPane textPane=new JTextPane();
+        textPane.setText(magicLinkSB.toString());
+        JPanel wrapPane = new JPanel();
+        wrapPane.setPreferredSize(new Dimension(80,20));
+        wrapPane.add(textPane);
+        JScrollPane scrollPane=new JScrollPane(wrapPane);
+        scrollPane.setPreferredSize(new Dimension(80,20));
+        scrollPane.setViewportView(textPane);
         lowerPane_container.add(scrollPane,col2Constraints);
-        lowerPane_container.revalidate();
-        lowerPane_container.repaint();
-        mainSplitPane_lowerPane.revalidate();
-        mainSplitPane_lowerPane.repaint();
-        mainSplitPane.revalidate();
-        mainSplitPane.repaint();
-        this.revalidate();
-        this.repaint();
+//        lowerPane_container.revalidate();
+//        lowerPane_container.repaint();
+//        mainSplitPane_lowerPane.revalidate();
+//        mainSplitPane_lowerPane.repaint();
+//        mainSplitPane.revalidate();
+//        mainSplitPane.repaint();
+//        this.revalidate();
+//        this.repaint();
         this.pack();
     }
+
     public byte[] covertSigToByte(Sign.SignatureData ecSig)
     {
         byte subV = ecSig.getV();
@@ -589,20 +671,12 @@ public class TokenID extends JFrame{
         sig.put(subV);
         return sig.array();
     }
-    public Sign.SignatureData signUniversalLinks(byte[] linkData, BigInteger privateKeyOfOrganiser)
+    public Sign.SignatureData signMagicLink(byte[] linkData, BigInteger privateKeyOfOrganiser)
     {
         ECKeyPair ecKeyPair  = ECKeyPair.create(privateKeyOfOrganiser);
         //returns the v, r and s signature params
         return Sign.signMessage(linkData, ecKeyPair);
     }
-
-    /**
-     * @param priceInSzabo
-     * @param expiryTimestamp
-     * @param tickets
-     * @param contractAddress
-     * @return
-     */
     public static byte[] encodeMessageForSpawning (
             BigInteger priceInSzabo,
             BigInteger expiryTimestamp,
