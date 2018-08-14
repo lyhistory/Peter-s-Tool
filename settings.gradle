@@ -1,1 +1,1 @@
-include ':peters-tool', ':app', ':tn', ':lib', ':dmz'
+include ':desktop', ':app', ':tn', ':lib', ':dmz'
