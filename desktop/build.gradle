@@ -16,4 +16,4 @@ sourceSets {
 
 sourceCompatibility = "1.8"
 targetCompatibility = "1.8"
-mainClassName = "io.stormbird.token.management.TokenID"
+mainClassName = "io.stormbird.token.management.MagicLinkTool"

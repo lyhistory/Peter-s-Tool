@@ -16,10 +16,12 @@ import org.xml.sax.SAXException;
 public class TokenViewModel extends TokenDefinition {
     public List<ComboBoxDataModel> comboBoxDataModelList;
     public List<TextFieldDataModel> textFieldDataModelList;
+    public List<ComboBoxSimpleItem> comboBoxContractAddressList;
     public TokenViewModel(InputStream xmlAsset, Locale locale) throws IOException, SAXException {
         super(xmlAsset, locale);
         this.comboBoxDataModelList=new ArrayList<>();
         this.textFieldDataModelList=new ArrayList<>();
+        this.comboBoxContractAddressList=new ArrayList<>();
         constructTokenViewModelForGUI(this);
     }
 
@@ -67,6 +69,9 @@ public class TokenViewModel extends TokenDefinition {
             List<ComboBoxDataModel.ComboBoxOption> options=model.convertToComboBoxDataModel(membersList);
             model.setComboBoxOptions(options.toArray(new ComboBoxDataModel.ComboBoxOption[options.size()]));
             this.comboBoxDataModelList.add(model);
+        }
+        for(String key:ad.addresses.keySet()){
+            comboBoxContractAddressList.add(new ComboBoxSimpleItem(key,ad.addresses.get(key).toString()));
         }
     }
 
