@@ -3,13 +3,14 @@ apply plugin: 'application'
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     compile project(path: ':lib')
-    compile ('org.web3j:core:3.1.1')
+    compile ('org.web3j:core:3.1.1','org.apache.commons:commons-csv:1.5')
 }
 
 sourceSets {
     main {
         resources {
             srcDirs "../contracts"
+            srcDirs "./res"
         }
     }
 }

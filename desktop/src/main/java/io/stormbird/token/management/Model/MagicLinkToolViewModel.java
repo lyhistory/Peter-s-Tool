@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 
-public class MagicLinkViewModel {
+public class MagicLinkToolViewModel {
     public List<JComboBox> ComboBoxForXMLList;
     public void setComboBoxForXMLList(JComboBox comboBox){
         if(this.ComboBoxForXMLList==null){

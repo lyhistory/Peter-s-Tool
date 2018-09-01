@@ -66,6 +66,7 @@ public class TokenViewModel extends TokenDefinition {
             }
             model.setId(idCombined.replaceFirst(".$",""));
             model.setName(labelName.replaceFirst(".$",""));
+            model.setBitmask(bitmask);
             List<ComboBoxDataModel.ComboBoxOption> options=model.convertToComboBoxDataModel(membersList);
             model.setComboBoxOptions(options.toArray(new ComboBoxDataModel.ComboBoxOption[options.size()]));
             this.comboBoxDataModelList.add(model);

@@ -11,6 +11,7 @@ public class ComboBoxDataModel {
     public String id;
     public String name;
     public BigInteger bitmask;
+    public int bitshift;
     public ComboBoxOption[] comboBoxOptions;
 
     public String getId(){
@@ -25,7 +26,14 @@ public class ComboBoxDataModel {
     public void setName(String name){
         this.name = name;
     }
-
+    public void setBitmask(BigInteger bitmask){
+        this.bitshift=0;
+        this.bitmask = bitmask;
+        if (this.bitmask != null ) {
+            while (bitmask.mod(BigInteger.ONE.shiftLeft(++this.bitshift)).equals(BigInteger.ZERO)) ;
+            this.bitshift--;
+        }
+    }
     public ComboBoxOption[] getComboBoxOptions(){
         return this.comboBoxOptions;
     }

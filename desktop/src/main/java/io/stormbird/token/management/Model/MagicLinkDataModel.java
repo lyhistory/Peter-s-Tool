@@ -1,127 +1,72 @@
 package io.stormbird.token.management.Model;
 
-import org.web3j.crypto.ECKeyPair;
-import org.web3j.crypto.Sign;
-import org.web3j.utils.Numeric;
-
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Base64;
 import java.util.Date;
+import java.util.TimeZone;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class MagicLinkDataModel {
-    public BigInteger[] TokenIDs;
-    public String Price;
-    public String Expiry;
-    public String ContractAddress;
+    public String magicLink;
+    public long expiry;
+    public double price;
+    public BigInteger priceWei;
+    public BigInteger[] tickets;
+    public int ticketCount;
+    public String contractAddress;
+    public byte[] signature = new byte[65];
+    public int contractType;
 
-    public String MagicLink;
-    public int Status; // 0 editable, 1 redeemped
+    public String remark;
 
-    //        MagicLink: https://app.awallet.io/base64(Message|Signature)
-//
-//        priceInWei		32 bytes (4 bytes MicroEth)
-//        expiry			32 bytes (4 bytes unsigned)
-//        contractAdss 20 bytesdre
-//        tokenIDs		32bytes * count
-//
-//        signature		65 bytes
-//        v 1 byte
-//        r 32 bytes
-//        s 32 bytes
-    public void generateMagicLink(String privateKeyofOrganizer){
+    public static Date getDateByValue(BigInteger val){
+        byte[] bytes=val.toByteArray();
+        String dateStr=new String(bytes, Charset.forName("UTF-8"));
+        DateFormat df = new SimpleDateFormat("yyyyMMddHHmmssZZZZ");
+        df.setTimeZone(TimeZone.getTimeZone("GMT"+getTimezoneByValue(val)));
+        Date date = null;
         try {
-            BigInteger privateKey = new BigInteger(privateKeyofOrganizer, 16);
-
-            BigInteger priceInSzabo = (new BigInteger(Price));
-            DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZZZZ");
-
-            Date date = null;
-            date = df.parse(this.Expiry);
-            BigInteger expiryTimestamp = BigInteger.valueOf(date.getTime() / 1000);
-
-            byte[] linkData = encodeMessageForSpawning(priceInSzabo, expiryTimestamp, this.TokenIDs, this.ContractAddress);
-            Sign.SignatureData signedData = signMagicLink(linkData, privateKey);
-            byte[] signature = covertSigToByte(signedData);
-            byte[] completeLink = new byte[linkData.length + signature.length];
-            System.arraycopy(linkData, 0, completeLink, 0, linkData.length);
-            System.arraycopy(signature, 0, completeLink, linkData.length, signature.length);
-
-            StringBuilder magicLinkSB = new StringBuilder();
-
-            magicLinkSB.append("https://app.awallet.io/");
-            byte[] b64 = Base64.getUrlEncoder().encode(completeLink);
-            magicLinkSB.append(new String(b64));
-            this.MagicLink = magicLinkSB.toString();
+            date = df.parse(dateStr);
         } catch (ParseException e) {
             e.printStackTrace();
         }
+        return date;
     }
-    private Sign.SignatureData signMagicLink(byte[] linkData, BigInteger privateKeyOfOrganiser)
-    {
-        ECKeyPair ecKeyPair  = ECKeyPair.create(privateKeyOfOrganiser);
-        //returns the v, r and s signature params
-        return Sign.signMessage(linkData, ecKeyPair);
-    }
-    private static byte[] encodeMessageForSpawning (
-            BigInteger priceInSzabo,
-            BigInteger expiryTimestamp,
-            BigInteger[] tickets,
-            String contractAddress)
-    {
-        //0x01: Standard magic link.
-        //0x02: Spawn token magic link.
-        //0x03: Customisable spawn token link.
-        int byteLength=0;
-        byte[] leadingbytes = hexStringToBytes("02");
-        byteLength=1;//leading lenght
-        byte[] priceInMicroWei = priceInSzabo.toByteArray();
-        byteLength+=32;//priceinwei
-        byte[] expiry = expiryTimestamp.toByteArray();
-        byteLength+=32;//expiry
-        byteLength+=20;//contract address
-        byteLength+=tickets.length*32;//tickets
-        ByteBuffer message = ByteBuffer.allocate(byteLength);
-        message.put(leadingbytes);
-        byte[] leadingZeros = new byte[32 - priceInMicroWei.length];
-        message.put(leadingZeros);
-        message.put(priceInMicroWei);
-        byte[] leadingZerosExpiry = new byte[32 - expiry.length];
-        message.put(leadingZerosExpiry);
-        message.put(expiry);
-        byte[] contract = hexStringToBytes(Numeric.cleanHexPrefix(contractAddress));
-        message.put(contract);
-        for(BigInteger ticket : tickets) {
-            //need to pad so that it is 32bytes
-            String paddedTicket = Numeric.toHexStringNoPrefixZeroPadded(ticket, 64);
-            byte[] ticketAsByteArray = hexStringToBytes(paddedTicket);
-            message.put(ticketAsByteArray);
+    public static String getTimezoneByValue(BigInteger val){
+        byte[] bytes=val.toByteArray();
+        String dateStr=new String(bytes, Charset.forName("UTF-8"));
+        Pattern p = Pattern.compile("(\\+\\d{4})");
+        Matcher m = p.matcher(dateStr);
+        if (m.find()) {
+            return m.group(1);
+        }else{
+            return "";
         }
-        return message.array();
     }
-    private static byte[] hexStringToBytes(String s)
-    {
-        int len = s.length();
-        byte[] data = new byte[len / 2];
-        for (int i = 0; i < len; i += 2)
-        {
-            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
-                    + Character.digit(s.charAt(i + 1), 16));
+    public static Date getDateByValue(long expiry,boolean is_milliseconds){
+        DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZZZZ");
+        if(is_milliseconds==false){
+            expiry=expiry*1000;
         }
-        return data;
+        Date date = new Date( expiry);
+        return date;
     }
-    private byte[] covertSigToByte(Sign.SignatureData ecSig)
-    {
-        byte subV = ecSig.getV();
-        byte[] subR = ecSig.getR();
-        byte[] subS = ecSig.getS();
-        ByteBuffer sig=ByteBuffer.allocate(subR.length+subS.length+1);
-        sig.put(subR);
-        sig.put(subS);
-        sig.put(subV);
-        return sig.array();
+    public static String getTimezoneByValue(long expiry,boolean is_milliseconds){
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZZZZ");
+        Pattern p = Pattern.compile("(\\+\\d{4})");
+        if(is_milliseconds==false){
+            expiry=expiry*1000;
+        }
+        Date date = new Date( expiry);
+        Matcher m = p.matcher(df.format(date));
+        if (m.find()) {
+            return m.group(1);
+        }else{
+            return "";
+        }
     }
 }
