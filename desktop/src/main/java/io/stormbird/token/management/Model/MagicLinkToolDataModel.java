@@ -23,7 +23,7 @@ public class MagicLinkToolDataModel {
     public String MagicLink;
     public int Status; // 0 editable, 1 redeemped
 
-    //        MagicLink: https://app.awallet.io/base64(Message|Signature)
+//        MagicLink: https://app.awallet.io/base64(Message|Signature)
 //
 //        priceInWei		32 bytes (4 bytes MicroEth)
 //        expiry			32 bytes (4 bytes unsigned)

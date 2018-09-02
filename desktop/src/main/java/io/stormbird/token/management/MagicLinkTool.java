@@ -44,10 +44,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * 		    south(buttonAddAnother)
  **/
 public class MagicLinkTool extends JFrame{
-    public InputStream ticketXML = getClass().getResourceAsStream("/TicketingContract.xml");
-    public String privateKeyFilePath = "./desktop/wallets.key";
-    public String magicLinksCSVPath = "./desktop/magiclinks.csv";
-
+    public InputStream ticketXML = getClass().getResourceAsStream("/MeetupContract.xml");
+    public String privateKeyFilePath = "./desktop/res/wallets.key";
+    public String magicLinksCSVPath = "./desktop/res/magiclinks.csv";
 
     private JSplitPane mainSplitPane;
     private JPanel mainSplitPane_topPane;
@@ -56,18 +55,15 @@ public class MagicLinkTool extends JFrame{
     private JPanel tabPane_container;
     private JComboBox comboBoxContractAddress;
     private JPanel tabPane_container_centerPane;
+
     private static int magicLinkCount=0;
-
     private TokenViewModel _tokenViewModel;
-
     private Map<Integer, MagicLinkToolViewModel> _magicLinkViewMap;
-    private Map<Integer, MagicLinkToolDataModel> _magicLinkDataMap;
 
     public MagicLinkTool(){
         try {
             _tokenViewModel =new TokenViewModel(ticketXML, Locale.getDefault());
             _magicLinkViewMap = new ConcurrentHashMap<>();
-            _magicLinkDataMap = new ConcurrentHashMap<>();
 
             this.setJMenuBar(createMenuBar());
             this.initUpperPane();    //Private key Dropdownlist
@@ -75,7 +71,7 @@ public class MagicLinkTool extends JFrame{
             this.mainSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, mainSplitPane_topPane, mainSplitPane_tabPane);
             //this.mainSplitPane.setMinimumSize(new Dimension(900,300));
             this.setContentPane(mainSplitPane);
-            this.setMinimumSize(new Dimension(900,300));
+            //this.setMinimumSize(new Dimension(900,300));
             this.setTitle("MagicLink Generator");
             //this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             this.addWindowListener(new WindowAdapter() {
@@ -92,6 +88,7 @@ public class MagicLinkTool extends JFrame{
             this.pack();
         } catch (IOException | IllegalArgumentException | SAXException e){
             e.printStackTrace();
+            //log exception
         }
     }
 
@@ -99,7 +96,7 @@ public class MagicLinkTool extends JFrame{
         (new MagicLinkTool()).setVisible(true);
     }
 
-    //build menu
+    //create MenuBar
     public JMenuBar createMenuBar() {
         JMenuBar menuBar;
         JMenu menu, submenu;
@@ -143,7 +140,7 @@ public class MagicLinkTool extends JFrame{
         return menuBar;
     }
 
-    //manage private key
+    //create UpperPane: manage private key
     private  void initUpperPane() {
         Map<String,String> keys = loadWalletFromKeystore();
         mainSplitPane_topPane = new JPanel();
@@ -164,7 +161,7 @@ public class MagicLinkTool extends JFrame{
         textFieldPrivateKey.setColumns(30);
         leftPane.add(textFieldPrivateKey);
         JButton buttonImport=new JButton();
-        buttonImport.setText("Import");
+        buttonImport.setText("Click to Import");
         buttonImport.setForeground(Color.red);
         buttonImport.setBackground(Color.GREEN);
         buttonImport.addActionListener(new ActionListener() {
@@ -175,10 +172,9 @@ public class MagicLinkTool extends JFrame{
                                                    String address = getEthAddress(privateKey);
                                                    comboBoxKeysList.addItem(new ComboBoxSimpleItem(address,privateKey));
                                                }catch (Exception ex){
-                                                   JOptionPane.showMessageDialog(null, "Invalid PrivateKey",
+                                                   JOptionPane.showMessageDialog(null, "Invalid PrivateKey!",
                                                            "Error", JOptionPane.ERROR_MESSAGE);
                                                }
-
                                            }
                                        });
         leftPane.add(buttonImport);
@@ -196,16 +192,14 @@ public class MagicLinkTool extends JFrame{
         mainSplitPane_topPane.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
     }
 
-    //tabpane for magic link generation
+    //create TabPane: manage magic link creation
     private  void initTabPane(){
-
+        //init tabpane
         mainSplitPane_tabPane = new JTabbedPane();
         tabPane_container = new JPanel();
         tabPane_container.setLayout(new BoxLayout(tabPane_container, BoxLayout.Y_AXIS));
-        //tabPane_container.setMinimumSize(new Dimension(0,300));
         tabPane_container.setBorder(new EmptyBorder(10, 10, 10, 10));
-
-        //top contract address
+        //TopPane: contract address
         JPanel northPane = new JPanel();
         northPane.add(new JLabel("Contract:"));
         comboBoxContractAddress = new JComboBox();
@@ -214,7 +208,8 @@ public class MagicLinkTool extends JFrame{
             comboBoxContractAddress.setEnabled(true);
         }
         northPane.add(comboBoxContractAddress);
-        //center: left and right pane
+
+        //CenterPane: main container for magic link
         GridBagConstraints col1Constraints = new GridBagConstraints();
         col1Constraints.fill = GridBagConstraints.BOTH;
         col1Constraints.anchor=GridBagConstraints.CENTER;
@@ -236,17 +231,10 @@ public class MagicLinkTool extends JFrame{
         tabPane_container_centerPane = new JPanel();
         tabPane_container_centerPane.setLayout(new GridBagLayout());
         centerPane.add(tabPane_container_centerPane,BorderLayout.CENTER);
-        //bottom: add another button
-        JButton buttonAddAnother = new JButton();
-        buttonAddAnother.setText("Add Another");
-        buttonAddAnother.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                addAnotherTicket(null);
-            }
-        });
-        initTabPaneTitle();
-
+        //render container
+        //render title
+        initMagicLinkCreationColumnTitle();
+        //render from autosaved magiclink.csv
         ArrayList<MagicLinkDataModel> magicLinkDataModelArrayList = loadMagicLinksFromCSV();
         if(magicLinkDataModelArrayList==null||magicLinkDataModelArrayList.size()==0){
             addAnotherTicket(null);
@@ -256,37 +244,31 @@ public class MagicLinkTool extends JFrame{
             }
         }
 
+        //BottomPane: add another button
+        JButton buttonAddAnother = new JButton();
+        buttonAddAnother.setText("Add Another");
+        buttonAddAnother.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                addAnotherTicket(null);
+            }
+        });
+
         tabPane_container.add(northPane,BorderLayout.NORTH);
         tabPane_container.add(centerPane,BorderLayout.CENTER);
         tabPane_container.add(buttonAddAnother,BorderLayout.SOUTH);
-        mainSplitPane_tabPane.addTab("Meetup[x]",null, tabPane_container,
-                "");
+        mainSplitPane_tabPane.addTab("Meetup[x]",null, tabPane_container, "");
         mainSplitPane_tabPane.setMnemonicAt(0, KeyEvent.VK_1);
-        mainSplitPane_tabPane.addTab("[+]",null, null,
-                "");
+        mainSplitPane_tabPane.addTab("[+]",null, null, "");
         mainSplitPane_tabPane.setMnemonicAt(0, KeyEvent.VK_2);
         mainSplitPane_tabPane.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
-
         mainSplitPane_tabPane.setMinimumSize(new Dimension(0,300));
     }
 
-    private GridBagConstraints getGridConstraints(int gridx,int gridy,double weightx,int align){
-        GridBagConstraints colConstraints = new GridBagConstraints();
-        colConstraints.fill = GridBagConstraints.BOTH;
-        colConstraints.anchor = (align == 0) ? GridBagConstraints.WEST : GridBagConstraints.EAST;
-//        colConstraints.fill = (align == 0) ? GridBagConstraints.BOTH
-//                : GridBagConstraints.HORIZONTAL;
-        colConstraints.weightx=weightx;
-        colConstraints.weighty=1.0;
-        colConstraints.gridwidth=1;
-        colConstraints.gridx = gridx;
-        colConstraints.gridy = gridy;
-        return colConstraints;
-    }
-    private void initTabPaneTitle(){
+    // render the column title by xml attributes + token status/remark
+    private void initMagicLinkCreationColumnTitle(){
         int gridx,gridy;
         gridx=gridy=0;
-
         // render dropdown list
         for(ComboBoxDataModel comboBoxDataModel : _tokenViewModel.comboBoxDataModelList){
             GridBagConstraints colConstraints = getGridConstraints(gridx,gridy,0.5,0);
@@ -307,19 +289,21 @@ public class MagicLinkTool extends JFrame{
         tabPane_container_centerPane.add(new JLabel("Remark"),getGridConstraints(gridx,gridy,0.4,0));
 
     }
+
+    // add new magicLink generation form in row, managed by Map<Integer, MagicLinkToolViewModel> _magicLinkViewMap
     private void addAnotherTicket(MagicLinkDataModel magicLinkData){
         BigInteger tokenID = BigInteger.valueOf(0);
         if(magicLinkData!=null&&magicLinkData.tickets.length>0){
             tokenID=magicLinkData.tickets[0];
         }
         String currentTimezone = getCurrentTimezone();
+
         int gridx=0;
         magicLinkCount++;
         MagicLinkToolViewModel magicLinkViewModel=new MagicLinkToolViewModel();
-
         JTextField textFieldRowNum = new JTextField();
         textFieldRowNum.setName(Integer.toString(magicLinkCount));
-        // render dropdown list
+        // draw dropdownlist by XML map attributes
         for(ComboBoxDataModel comboBoxDataModel : _tokenViewModel.comboBoxDataModelList){
             GridBagConstraints colConstraints = getGridConstraints(gridx,magicLinkCount,0.5,0);
             ComboBoxDataModel.ComboBoxOption[] options=comboBoxDataModel.getComboBoxOptions();
@@ -336,8 +320,6 @@ public class MagicLinkTool extends JFrame{
                     }
                 }
             }
-            //updateEncodedValueMap(comboBox.getName(),options[0].getKey(),-1);
-            //tabPane_container_contentPane.add(textFieldEncodedValue);
 
             comboBox.addItemListener(new ItemListener(){
                 public void itemStateChanged(ItemEvent e) {
@@ -345,15 +327,14 @@ public class MagicLinkTool extends JFrame{
                 }
             });
             gridx++;
-
             magicLinkViewModel.setComboBoxForXMLList(comboBox);
         }
+        // draw textfield&datepicker by XML normal&time attributes
         for(TextFieldDataModel model : _tokenViewModel.textFieldDataModelList){
             GridBagConstraints colConstraints = getGridConstraints(gridx,magicLinkCount,0.4,0);
             BigInteger valWithoutMask = tokenID.and(model.bitmask).shiftRight(model.bitshift);
             if(model.id.equals("time")) {
-
-                JTextField textFieldHiddenValue = new JTextField();
+                JTextField textFieldHiddenValue = new JTextField(); //for trigger onchange event
                 textFieldHiddenValue.setVisible(false);
 
                 JPanel dateTimePickerPane = new JPanel();
@@ -364,7 +345,6 @@ public class MagicLinkTool extends JFrame{
                 if(valWithoutMask.equals(BigInteger.valueOf(0))==false){
                     currentTimezone = MagicLinkDataModel.getTimezoneStrByValue(valWithoutMask);
                     String dateStr=MagicLinkDataModel.getDateStrByValue(valWithoutMask,currentTimezone);
-
                     ((DateTimePicker) dateTimePickerTime).setDate(dateStr);
                     setSelectedItem(currentTimezone,timeZoneTime);
                 }
@@ -378,15 +358,10 @@ public class MagicLinkTool extends JFrame{
                     public void changedUpdate(DocumentEvent e) {
                         warn();
                     }
-
-                    public void removeUpdate(DocumentEvent e) {
-                        warn();
-                    }
-
+                    public void removeUpdate(DocumentEvent e) {warn();}
                     public void insertUpdate(DocumentEvent e) {
                         warn();
                     }
-
                     public void warn() {
                         generateMagicLink(Integer.valueOf(textFieldRowNum.getName()));
                     }
@@ -402,7 +377,6 @@ public class MagicLinkTool extends JFrame{
                 textFieldInput.addKeyListener(new KeyAdapter() {
                     public void keyReleased(KeyEvent e) {
                         try {
-
                             generateMagicLink(Integer.valueOf(textFieldRowNum.getName()));
                         } catch (Exception ex) {
                             JOptionPane.showMessageDialog(null, "Invalid Data Type! Please check the type",
@@ -426,7 +400,6 @@ public class MagicLinkTool extends JFrame{
 
                 }
             }
-            //tabPane_container_contentPane.add(textFieldEncodedValue);
             gridx++;
         }
         JPanel tokenStatusPane = new JPanel();
@@ -436,7 +409,7 @@ public class MagicLinkTool extends JFrame{
         flowLayout.setHgap(0);
         flowLayout.setVgap(0);
         //flowLayout.setAlignment(FlowLayout.TRAILING);
-        //tokenStatusPane.setLayout(flowLayout);
+        tokenStatusPane.setLayout(flowLayout);
         tokenStatusPane.add(new JLabel("expiry"));
         JPanel dateTimePickerPane = new JPanel();
         JTextField textFieldHiddenValue = new JTextField();
@@ -460,15 +433,10 @@ public class MagicLinkTool extends JFrame{
             public void changedUpdate(DocumentEvent e) {
                 warn();
             }
-
             public void removeUpdate(DocumentEvent e) {
                 warn();
             }
-
-            public void insertUpdate(DocumentEvent e) {
-                warn();
-            }
-
+            public void insertUpdate(DocumentEvent e) { warn();}
             public void warn() {
                 generateMagicLink(Integer.valueOf(textFieldRowNum.getName()));
             }
@@ -505,6 +473,190 @@ public class MagicLinkTool extends JFrame{
         this.pack();
     }
 
+    /**
+     * ##########################################################################################################################################
+     * ## todo: Refactor all of it
+     * ##########################################################################################################################################
+     */
+
+    /**
+     * MagicLink Helper
+     */
+    // calculate tokenID and generate magic link from _magicLinkViewMap
+    private void generateMagicLink(int rowNum){
+        if(rowNum<=0){
+            //log expected
+            return;
+        }
+        if(comboBoxKeysList.getItemCount()<=0){
+            JOptionPane.showMessageDialog(null,
+                    "Please Provide private key.");
+            return;
+        }
+
+        Map<String,BigInteger> encodedValueMap=new ConcurrentHashMap<>();
+        String tokenidStr="";
+        BigInteger tokenid=BigInteger.valueOf(0);
+
+        //
+        MagicLinkToolViewModel magicLinkViewModel = _magicLinkViewMap.get(rowNum);
+        if(magicLinkViewModel.ComboBoxForXMLList!=null){
+            for(int i=0;i<magicLinkViewModel.ComboBoxForXMLList.size();++i){
+                JComboBox comboBox=magicLinkViewModel.ComboBoxForXMLList.get(i);
+                ComboBoxDataModel.ComboBoxOption c = (ComboBoxDataModel.ComboBoxOption)comboBox.getSelectedItem();
+                BigInteger value=new BigInteger(c.getKey().toString(16),16);
+                encodedValueMap.put(comboBox.getName(),value);
+            }
+        }
+        if(magicLinkViewModel.TextFieldForXMLMap!=null){
+            for(JTextField textField:magicLinkViewModel.TextFieldForXMLMap.keySet()){
+                TextFieldDataModel model=magicLinkViewModel.TextFieldForXMLMap.get(textField);
+                BigInteger encodedValue = BigInteger.valueOf(0);
+                String inputStr = textField.getText().toString();
+                if (inputStr != null && inputStr.length() > 0) {
+                    if (model.as.equals("UTF8")) {
+                        byte[] bytes = inputStr.getBytes(Charset.forName("UTF-8"));
+                        encodedValue = new BigInteger(bytes);
+                    } else if (model.as.equals("Unsigned")) {
+                        encodedValue = new BigInteger(inputStr);
+                    }
+                    encodedValue = encodedValue.shiftLeft(model.getBitshift()).and(model.getBitmask());
+                    encodedValueMap.put(model.id,encodedValue);
+                }
+            }
+        }
+        if(magicLinkViewModel.DateTimePickerMap!=null){
+            for(DateTimePickerViewModel dateTimePickerViewModel:magicLinkViewModel.DateTimePickerMap.keySet()){
+                TextFieldDataModel model=magicLinkViewModel.DateTimePickerMap.get(dateTimePickerViewModel);
+                try{
+                    BigInteger encodedValue = BigInteger.valueOf(0);
+                    DateFormat displayFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZZZZ");
+                    DateFormat targetFormat = new SimpleDateFormat("yyyyMMddHHmmssZZZZ");
+                    ComboBoxSimpleItem item = (ComboBoxSimpleItem)dateTimePickerViewModel.TimeZone.getSelectedItem();
+                    String dateStr = String.format("%s%s",dateTimePickerViewModel.DateTimePickerTime.getText(),item.getKey());
+                    displayFormat.setTimeZone(TimeZone.getTimeZone("GMT"+item.getKey()));
+                    targetFormat.setTimeZone(TimeZone.getTimeZone("GMT"+item.getKey()));
+                    Date date = displayFormat.parse(dateStr);
+                    String targetTimeStr = targetFormat.format(date);
+                    if (targetTimeStr != null && targetTimeStr.length() > 0) {
+                        byte[] bytes = targetTimeStr.getBytes(Charset.forName("UTF-8"));
+                        encodedValue = new BigInteger(bytes);
+                        encodedValue = encodedValue.shiftLeft(model.getBitshift()).and(model.getBitmask());
+                    }
+                    encodedValueMap.put(model.id,encodedValue);
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(null, "Opoos!"+ex.getMessage(),
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }
+        // now we can get the tokenID!
+        for(String key:encodedValueMap.keySet()){
+            tokenid=tokenid.or(encodedValueMap.get(key));
+        }
+
+        // it's time to create the magic link!
+        ComboBoxSimpleItem contractAddressSelectedItem = (ComboBoxSimpleItem)comboBoxContractAddress.getSelectedItem();
+
+        MagicLinkToolDataModel magicLinkDataModel = new MagicLinkToolDataModel();
+        magicLinkDataModel.TokenIDs = new BigInteger[]{tokenid};
+        magicLinkDataModel.Price = "0";
+
+        DateTimePickerViewModel dateTimePicker=magicLinkViewModel.DateTimePickerExpire;
+        ComboBoxSimpleItem item = (ComboBoxSimpleItem)dateTimePicker.TimeZone.getSelectedItem();
+        magicLinkDataModel.Expiry=String.format("%s%s",dateTimePicker.DateTimePickerTime.getText(),item.getKey());
+        magicLinkDataModel.timeZone = TimeZone.getTimeZone("GMT"+item.getKey());
+        magicLinkDataModel.ContractAddress=contractAddressSelectedItem.getKey();
+
+        ComboBoxSimpleItem currentPrivateKeySelectedItem = (ComboBoxSimpleItem)comboBoxKeysList.getSelectedItem();
+        magicLinkDataModel.generateMagicLink(currentPrivateKeySelectedItem.getValue());
+        //update UI
+        JTextField textFieldMagicLink = magicLinkViewModel.TextFieldMagicLink;
+        textFieldMagicLink.setText(magicLinkDataModel.MagicLink);
+        JTextField textFieldRemark = magicLinkViewModel.TextFieldRemark;
+
+        tokenidStr=tokenid.toString(16);
+        while (tokenidStr.length() < 64) {
+            tokenidStr = "0" + tokenidStr;
+        }
+        textFieldRemark.setText("(change whatever u want),Row:"+Integer.toString(rowNum)+",TokenID:"+tokenidStr);
+    }
+    // parse magic link
+    public MagicLinkDataModel parseMagicLink(String link){
+        final String importTemplate = "https://app.awallet.io/";
+        int offset = link.indexOf(importTemplate);
+        if (offset > -1)
+        {
+            offset += importTemplate.length();
+            String linkData = link.substring(offset);
+            return readLinkData(linkData);
+        }
+        return null;
+    }
+    private MagicLinkDataModel readLinkData (String linkData) {
+        byte[] bytes = Base64.getUrlDecoder().decode(linkData);
+        long szabo;
+        MagicLinkDataModel data = new MagicLinkDataModel();
+        try
+        {
+            ByteArrayInputStream bas = new ByteArrayInputStream(bytes);
+            EthereumReadBuffer ds = new EthereumReadBuffer(bas);
+
+            data.contractType = ds.readByte();
+            szabo = ds.readBI().intValue();;//ds.toUnsignedLong(ds.readInt());
+            data.expiry = ds.readBI().longValue();
+            data.priceWei = Convert.toWei(BigDecimal.valueOf(szabo), Convert.Unit.SZABO).toBigInteger();
+            data.contractAddress = ds.readAddress();
+            int ticketCount = (ds.available() - 65) / 32;
+            data.tickets =new BigInteger[ticketCount];
+            for(int i=0;i<ticketCount;++i){
+                data.tickets[i] = ds.readBI();
+            }
+            data.ticketCount = data.tickets.length;
+            //now read signature
+            ds.readSignature(data.signature);
+            ds.close();
+        } catch (Exception e) {
+            return null;
+        }
+
+        BigInteger microEth = Convert.fromWei(new BigDecimal(data.priceWei), Convert.Unit.SZABO).abs().toBigInteger();
+        data.price = microEth.doubleValue() / 1000000.0;
+
+        return data;
+    }
+    private static String getEthAddress(String privateKey){
+        Credentials cs = Credentials.create(privateKey);
+        String publicKey = cs.getEcKeyPair().getPublicKey().toString(16);
+        return cs.getAddress();
+    }
+
+    /**
+     * UI Helper
+     */
+    private GridBagConstraints getGridConstraints(int gridx,int gridy,double weightx,int align){
+        GridBagConstraints colConstraints = new GridBagConstraints();
+        //colConstraints.fill = GridBagConstraints.BOTH;
+        colConstraints.anchor = (align == 0) ? GridBagConstraints.WEST : GridBagConstraints.EAST;
+        colConstraints.fill = (align == 0) ? GridBagConstraints.BOTH : GridBagConstraints.HORIZONTAL;
+        colConstraints.weightx=weightx;
+        colConstraints.weighty=1.0;
+        colConstraints.gridwidth=1;
+        colConstraints.gridx = gridx;
+        colConstraints.gridy = gridy;
+        return colConstraints;
+    }
+    private void setSelectedItem(String key,JComboBox comboBox) {
+        int index = -1;
+        for (int i = 0; i < comboBox.getItemCount(); i++) {
+            ComboBoxSimpleItem item = (ComboBoxSimpleItem)comboBox.getItemAt(i);
+            if (key.equals(item.getKey())) {
+                index = i;
+                comboBox.setSelectedItem(item);
+                break;
+            }
+        }
+    }
     private JComboBox createDatePicker(final JPanel dateTimePickerPane, JButton dateTimePicker){
         JComboBox comboBoxTimezone;
         dateTimePickerPane.setLayout(new GridBagLayout());
@@ -601,125 +753,9 @@ public class MagicLinkTool extends JFrame{
         currentTimezone = String.format("%s%s", offsetHrsStr,offsetMinsStr);
         return currentTimezone;
     }
-    private void setSelectedItem(String key,JComboBox comboBox) {
-        int index = -1;
-        for (int i = 0; i < comboBox.getItemCount(); i++) {
-            ComboBoxSimpleItem item = (ComboBoxSimpleItem)comboBox.getItemAt(i);
-            if (key.equals(item.getKey())) {
-                index = i;
-                comboBox.setSelectedItem(item);
-                break;
-            }
-        }
-
-    }
-
     /**
-     * Calculation TokenID and generate MagicLink
+     * File Helper
      */
-    private void generateMagicLink(int rowNum){
-        //encodedValueMap.put(name,value);
-        if(rowNum<=0){
-            //log expected
-            return;
-        }
-        ComboBoxSimpleItem currentPrivateKeySelectedItem = (ComboBoxSimpleItem)comboBoxKeysList.getSelectedItem();
-        if(currentPrivateKeySelectedItem==null||currentPrivateKeySelectedItem.getValue()==null){
-            JOptionPane.showMessageDialog(null,
-                    "Please Provide private key.");
-            return;
-        }
-        Map<String,BigInteger> encodedValueMap=new ConcurrentHashMap<>();
-        String tokenidStr="";
-        BigInteger tokenid=BigInteger.valueOf(0);
-
-        //
-        MagicLinkToolViewModel magicLinkViewModel = _magicLinkViewMap.get(rowNum);
-        if(magicLinkViewModel.ComboBoxForXMLList!=null){
-            for(int i=0;i<magicLinkViewModel.ComboBoxForXMLList.size();++i){
-                JComboBox comboBox=magicLinkViewModel.ComboBoxForXMLList.get(i);
-                ComboBoxDataModel.ComboBoxOption c = (ComboBoxDataModel.ComboBoxOption)comboBox.getSelectedItem();
-                BigInteger value=new BigInteger(c.getKey().toString(16),16);
-                encodedValueMap.put(comboBox.getName(),value);
-            }
-        }
-        if(magicLinkViewModel.TextFieldForXMLMap!=null){
-            for(JTextField textField:magicLinkViewModel.TextFieldForXMLMap.keySet()){
-                TextFieldDataModel model=magicLinkViewModel.TextFieldForXMLMap.get(textField);
-                BigInteger encodedValue = BigInteger.valueOf(0);
-                String inputStr = textField.getText().toString();
-                if (inputStr != null && inputStr.length() > 0) {
-                    if (model.as.equals("UTF8")) {
-                        byte[] bytes = inputStr.getBytes(Charset.forName("UTF-8"));
-                        encodedValue = new BigInteger(bytes);
-                    } else if (model.as.equals("Unsigned")) {
-                        encodedValue = new BigInteger(inputStr);
-                    }
-                    encodedValue = encodedValue.shiftLeft(model.getBitshift()).and(model.getBitmask());
-                    encodedValueMap.put(model.id,encodedValue);
-                }
-            }
-        }
-        if(magicLinkViewModel.DateTimePickerMap!=null){
-            for(DateTimePickerViewModel dateTimePickerViewModel:magicLinkViewModel.DateTimePickerMap.keySet()){
-
-                TextFieldDataModel model=magicLinkViewModel.DateTimePickerMap.get(dateTimePickerViewModel);
-                try{
-                    BigInteger encodedValue = BigInteger.valueOf(0);
-                    DateFormat displayFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZZZZ");
-                    DateFormat targetFormat = new SimpleDateFormat("yyyyMMddHHmmssZZZZ");
-                    ComboBoxSimpleItem item = (ComboBoxSimpleItem)dateTimePickerViewModel.TimeZone.getSelectedItem();
-                    String dateStr = String.format("%s%s",dateTimePickerViewModel.DateTimePickerTime.getText(),item.getKey());
-                    displayFormat.setTimeZone(TimeZone.getTimeZone("GMT"+item.getKey()));
-                    targetFormat.setTimeZone(TimeZone.getTimeZone("GMT"+item.getKey()));
-                    Date date = displayFormat.parse(dateStr);
-                    String targetTimeStr = targetFormat.format(date);
-                    if (targetTimeStr != null && targetTimeStr.length() > 0) {
-                        byte[] bytes = targetTimeStr.getBytes(Charset.forName("UTF-8"));
-                        encodedValue = new BigInteger(bytes);
-                        encodedValue = encodedValue.shiftLeft(model.getBitshift()).and(model.getBitmask());
-                    }
-                    encodedValueMap.put(model.id,encodedValue);
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(null, "Something wrong!",
-                            "Error", JOptionPane.ERROR_MESSAGE);
-                }
-            }
-        }
-
-        for(String key:encodedValueMap.keySet()){
-            tokenid=tokenid.or(encodedValueMap.get(key));
-        }
-
-        //
-        ComboBoxSimpleItem contractAddressSelectedItem = (ComboBoxSimpleItem)comboBoxContractAddress.getSelectedItem();
-
-        MagicLinkToolDataModel magicLinkDataModel = _magicLinkDataMap.get(rowNum);
-        if(magicLinkDataModel==null){
-            magicLinkDataModel=new MagicLinkToolDataModel();
-        }
-        magicLinkDataModel.TokenIDs = new BigInteger[]{tokenid};
-        magicLinkDataModel.Price = "0";
-
-        DateTimePickerViewModel dateTimePicker=magicLinkViewModel.DateTimePickerExpire;
-        ComboBoxSimpleItem item = (ComboBoxSimpleItem)dateTimePicker.TimeZone.getSelectedItem();
-        magicLinkDataModel.Expiry=String.format("%s%s",dateTimePicker.DateTimePickerTime.getText(),item.getKey());
-        magicLinkDataModel.timeZone = TimeZone.getTimeZone("GMT"+item.getKey());
-        magicLinkDataModel.ContractAddress=contractAddressSelectedItem.getKey();
-
-
-        magicLinkDataModel.generateMagicLink(currentPrivateKeySelectedItem.getValue());
-        //update UI
-        JTextField textFieldMagicLink = magicLinkViewModel.TextFieldMagicLink;
-        textFieldMagicLink.setText(magicLinkDataModel.MagicLink);
-        JTextField textFieldRemark = magicLinkViewModel.TextFieldRemark;
-
-        tokenidStr=tokenid.toString(16);
-        while (tokenidStr.length() < 64) {
-            tokenidStr = "0" + tokenidStr;
-        }
-        textFieldRemark.setText(Integer.toString(rowNum)+","+tokenidStr);
-    }
     private Map<String,String> loadWalletFromKeystore(){
         Map<String,String> keys = new ConcurrentHashMap<>();
         try {
@@ -744,7 +780,7 @@ public class MagicLinkTool extends JFrame{
             int i=0;
             for (CSVRecord csvRecord : csvParser) {
                 if(i!=0) {
-                    MagicLinkDataModel model = parseUniversalLink(csvRecord.get(0));
+                    MagicLinkDataModel model = parseMagicLink(csvRecord.get(0));
                     if (model != null) {
                         model.magicLink = csvRecord.get(0);
                         model.remark = csvRecord.get(1);
@@ -771,8 +807,7 @@ public class MagicLinkTool extends JFrame{
                     csvPrinter.flush();
                     writer.close();
                 } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(null,
-                            "Something wrong saving magiclinks to csv.");
+
                 }
             }
         }
@@ -792,7 +827,6 @@ public class MagicLinkTool extends JFrame{
                                     magicLinkViewModel.TextFieldRemark.getText());
                         }
                     }
-
                     csvPrinter.flush();
                     writer.close();
                 } catch (Exception ex) {
@@ -802,12 +836,13 @@ public class MagicLinkTool extends JFrame{
             }
         }
     }
-
     private boolean createFileIfNotExists(String filePath){
         try {
             File f = new File(filePath);
-
             if (f.exists()==false) {
+                if(f.getParentFile().exists()==false){
+                    f.getParentFile().mkdirs();
+                }
                 f.createNewFile();
             }
             return true;
@@ -816,62 +851,5 @@ public class MagicLinkTool extends JFrame{
                     "unexpected error try to create "+filePath);
             return false;
         }
-    }
-    private static String getEthAddress(String privateKey){
-//        BigInteger privateKeyInBT = new BigInteger(privateKeyInHex, 16);
-//        ECKeyPair aPair = ECKeyPair.create(privateKeyInBT);
-//        BigInteger publicKeyInBT = aPair.getPublicKey();
-//        String sPublickeyInHex = publicKeyInBT.toString(16);
-//        return sPublickeyInHex;
-        Credentials cs = Credentials.create(privateKey);
-        String publicKey = cs.getEcKeyPair().getPublicKey().toString(16);
-        return cs.getAddress();
-    }
-    public MagicLinkDataModel parseUniversalLink(String link)
-    {
-        final String importTemplate = "https://app.awallet.io/";
-        int offset = link.indexOf(importTemplate);
-        if (offset > -1)
-        {
-            offset += importTemplate.length();
-            String linkData = link.substring(offset);
-            return createFromLink(linkData);
-        }
-        return null;
-    }
-
-    private MagicLinkDataModel createFromLink (String linkData) {
-        byte[] bytes = Base64.getUrlDecoder().decode(linkData);
-        long szabo;
-
-        MagicLinkDataModel data = new MagicLinkDataModel();
-        //read the order
-        try
-        {
-            ByteArrayInputStream bas = new ByteArrayInputStream(bytes);
-            EthereumReadBuffer ds = new EthereumReadBuffer(bas);
-
-            data.contractType = ds.readByte();
-            szabo = ds.readBI().intValue();;//ds.toUnsignedLong(ds.readInt());
-            data.expiry = ds.readBI().longValue();
-            data.priceWei = Convert.toWei(BigDecimal.valueOf(szabo), Convert.Unit.SZABO).toBigInteger();
-            data.contractAddress = ds.readAddress();
-            int ticketCount = (ds.available() - 65) / 32;
-            data.tickets =new BigInteger[ticketCount];
-            for(int i=0;i<ticketCount;++i){
-                data.tickets[i] = ds.readBI();
-            }
-            data.ticketCount = data.tickets.length;
-            //now read signature
-            ds.readSignature(data.signature);
-            ds.close();
-        } catch (Exception e) {
-            return null;
-        }
-
-        BigInteger microEth = Convert.fromWei(new BigDecimal(data.priceWei), Convert.Unit.SZABO).abs().toBigInteger();
-        data.price = microEth.doubleValue() / 1000000.0;
-
-        return data;
     }
 }
