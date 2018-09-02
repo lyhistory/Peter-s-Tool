@@ -11,11 +11,13 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Base64;
 import java.util.Date;
+import java.util.TimeZone;
 
 public class MagicLinkToolDataModel {
     public BigInteger[] TokenIDs;
     public String Price;
     public String Expiry;
+    public TimeZone timeZone;
     public String ContractAddress;
 
     public String MagicLink;
@@ -38,7 +40,7 @@ public class MagicLinkToolDataModel {
 
             BigInteger priceInSzabo = (new BigInteger(Price));
             DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZZZZ");
-
+            df.setTimeZone(this.timeZone);
             Date date = null;
             date = df.parse(this.Expiry);
             BigInteger expiryTimestamp = BigInteger.valueOf(date.getTime() / 1000);

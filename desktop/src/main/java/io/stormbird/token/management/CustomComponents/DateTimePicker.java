@@ -100,6 +100,12 @@ public class DateTimePicker extends JButton {
             this.relatedTextField.setText(result);
         }
     }
+    public void setDate(String dateStr) {
+        super.setText(dateStr);
+        if(this.relatedTextField!=null) {
+            this.relatedTextField.setText(dateStr);
+        }
+    }
 
     public Date getDate() {
         String dateString = getText().substring(preLabel.length());

@@ -23,23 +23,25 @@ public class MagicLinkDataModel {
 
     public String remark;
 
-    public static Date getDateByValue(BigInteger val){
+    public static String getDateStrByValue(BigInteger val,String timezone){
+        SimpleDateFormat sourcedf = new SimpleDateFormat("yyyyMMddHHmmssZZZZ");
+        SimpleDateFormat targetdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         byte[] bytes=val.toByteArray();
         String dateStr=new String(bytes, Charset.forName("UTF-8"));
-        DateFormat df = new SimpleDateFormat("yyyyMMddHHmmssZZZZ");
-        df.setTimeZone(TimeZone.getTimeZone("GMT"+getTimezoneByValue(val)));
-        Date date = null;
+        sourcedf.setTimeZone(TimeZone.getTimeZone("GMT" + timezone));
+        targetdf.setTimeZone(TimeZone.getTimeZone("GMT" + timezone));
         try {
-            date = df.parse(dateStr);
+            Date date=sourcedf.parse(dateStr);
+            return targetdf.format(date);
         } catch (ParseException e) {
             e.printStackTrace();
         }
-        return date;
+        return "";
     }
-    public static String getTimezoneByValue(BigInteger val){
+    public static String getTimezoneStrByValue(BigInteger val){
         byte[] bytes=val.toByteArray();
         String dateStr=new String(bytes, Charset.forName("UTF-8"));
-        Pattern p = Pattern.compile("(\\+\\d{4})");
+        Pattern p = Pattern.compile("(\\+\\d{4}|\\-\\d{4})");
         Matcher m = p.matcher(dateStr);
         if (m.find()) {
             return m.group(1);
@@ -47,26 +49,26 @@ public class MagicLinkDataModel {
             return "";
         }
     }
-    public static Date getDateByValue(long expiry,boolean is_milliseconds){
-        DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZZZZ");
-        if(is_milliseconds==false){
-            expiry=expiry*1000;
-        }
-        Date date = new Date( expiry);
-        return date;
+    public static String getDateStrByValue(long expiry, String timezone){
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        df.setTimeZone(TimeZone.getTimeZone("GMT" + timezone));
+        expiry = expiry * 1000;
+        Date date = new Date(expiry);
+        return df.format(date);
     }
-    public static String getTimezoneByValue(long expiry,boolean is_milliseconds){
-        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZZZZ");
-        Pattern p = Pattern.compile("(\\+\\d{4})");
-        if(is_milliseconds==false){
-            expiry=expiry*1000;
-        }
-        Date date = new Date( expiry);
-        Matcher m = p.matcher(df.format(date));
-        if (m.find()) {
-            return m.group(1);
-        }else{
-            return "";
-        }
-    }
+//    public static String getTimezoneByValue(long expiry,String timezone){
+//        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZZZZ");
+//        df.setTimeZone(TimeZone.getTimeZone("GMT"+timezone));
+//        Pattern p = Pattern.compile("(\\+\\d{4})");
+//        expiry=expiry*1000;
+//        Date date = new Date( expiry);
+//
+//        date.getTimezoneOffset();
+//        Matcher m = p.matcher(df.format(date));
+//        if (m.find()) {
+//            return m.group(1);
+//        }else{
+//            return "";
+//        }
+//    }
 }
