@@ -2,11 +2,17 @@ package io.stormbird.token.management;
 
 import io.stormbird.token.entity.EthereumReadBuffer;
 import io.stormbird.token.management.CustomComponents.DateTimePicker;
+import io.stormbird.token.management.CustomComponents.WizardDialog;
 import io.stormbird.token.management.Model.*;
+import io.stormbird.token.tools.TokenDefinition;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import org.web3j.crypto.Credentials;
 import org.web3j.utils.Convert;
 import org.xml.sax.SAXException;
@@ -15,6 +21,15 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
@@ -44,7 +59,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * 		    south(buttonAddAnother)
  **/
 public class MagicLinkTool extends JFrame{
-    public InputStream ticketXML = getClass().getResourceAsStream("/MeetupContract.xml");
+    public InputStream ticketXMLTemplate = getClass().getResourceAsStream("/MeetupContract.xml");
+    public String ticketXMLFilePath = "./desktop/res/MeetupContract.xml";
     public String privateKeyFilePath = "./desktop/res/wallets.key";
     public String magicLinksCSVPath = "./desktop/res/magiclinks.csv";
 
@@ -53,17 +69,19 @@ public class MagicLinkTool extends JFrame{
     private JComboBox comboBoxKeysList;
     private JTabbedPane mainSplitPane_tabPane;
     private JPanel tabPane_container;
+    private JPanel tabPane_wizard;
     private JComboBox comboBoxContractAddress;
     private JPanel tabPane_container_centerPane;
 
     private static int magicLinkCount=0;
     private TokenViewModel _tokenViewModel;
     private Map<Integer, MagicLinkToolViewModel> _magicLinkViewMap;
-
+    private static ArrayList<MagicLinkDataModel> _magicLinkDataModelArrayList;
     public MagicLinkTool(){
         try {
-            _tokenViewModel =new TokenViewModel(ticketXML, Locale.getDefault());
             _magicLinkViewMap = new ConcurrentHashMap<>();
+            _magicLinkDataModelArrayList = loadMagicLinksFromCSV();
+
 
             this.setJMenuBar(createMenuBar());
             this.initUpperPane();    //Private key Dropdownlist
@@ -83,17 +101,22 @@ public class MagicLinkTool extends JFrame{
                     System.exit(0);
                 }
             });
+
+
             this.setLocationByPlatform(true);
             this.setResizable(true);
             this.pack();
-        } catch (IOException | IllegalArgumentException | SAXException e){
+
+
+        } catch (IllegalArgumentException e){
             e.printStackTrace();
             //log exception
         }
     }
 
     public static void main(String args[]) {
-        (new MagicLinkTool()).setVisible(true);
+        MagicLinkTool magicLinkTool = new MagicLinkTool();
+        magicLinkTool.setVisible(true);
     }
 
     //create MenuBar
@@ -199,6 +222,73 @@ public class MagicLinkTool extends JFrame{
         tabPane_container = new JPanel();
         tabPane_container.setLayout(new BoxLayout(tabPane_container, BoxLayout.Y_AXIS));
         tabPane_container.setBorder(new EmptyBorder(10, 10, 10, 10));
+        if(_magicLinkDataModelArrayList==null||_magicLinkDataModelArrayList.size()==0){
+            initWizard();
+        }else{
+            initTabPaneContainer();
+        }
+        mainSplitPane_tabPane.addTab("Meetup[x]",null, tabPane_container, "");
+        mainSplitPane_tabPane.setMnemonicAt(0, KeyEvent.VK_1);
+        mainSplitPane_tabPane.addTab("[+]",null, null, "");
+        mainSplitPane_tabPane.setMnemonicAt(0, KeyEvent.VK_2);
+        mainSplitPane_tabPane.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
+        mainSplitPane_tabPane.setMinimumSize(new Dimension(0,300));
+    }
+    private void initWizard(){
+        tabPane_wizard = new JPanel();
+        tabPane_wizard.setLayout(new BoxLayout(tabPane_wizard, BoxLayout.Y_AXIS));
+        tabPane_wizard.setBorder(new EmptyBorder(10, 10, 10, 10));
+        JPanel northPane = new JPanel();
+        northPane.add(new JLabel("Deploy a new contract"));
+        JTextField textFieldContractAddress = new JTextField(10);
+        JComboBox comboBoxNetworkID=new JComboBox();
+        comboBoxNetworkID.addItem(new ComboBoxSimpleItem("mainnet", "1"));
+        comboBoxNetworkID.addItem(new ComboBoxSimpleItem("Ropsten", "3"));
+
+        JPanel centerPane = new JPanel();
+        centerPane.add(new JLabel("Contract Address:"));
+        centerPane.add(textFieldContractAddress);
+        centerPane.add(comboBoxNetworkID);
+
+        JPanel southPane = new JPanel();
+        JButton buttonNextStep = new JButton();
+        buttonNextStep.setText("Next");
+        buttonNextStep.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                ComboBoxSimpleItem selectedNetworkItem = (ComboBoxSimpleItem) comboBoxNetworkID.getSelectedItem();
+                String networkid = selectedNetworkItem.getValue();
+                String contractAddress = textFieldContractAddress.getText();
+                // todo validation
+                if (contractAddress==null||contractAddress.equals("")) {
+                    textFieldContractAddress.selectAll();
+                    JOptionPane.showMessageDialog(
+                            null,
+                            "cannot be empty!",
+                            "Warn",
+                            JOptionPane.ERROR_MESSAGE);
+                    contractAddress = null;
+                    textFieldContractAddress.requestFocusInWindow();
+                } else {
+                    updateContractAddress(networkid,contractAddress);
+
+                }
+            }
+        });
+        southPane.add(buttonNextStep);
+        tabPane_wizard.add(northPane,BorderLayout.NORTH);
+        tabPane_wizard.add(centerPane,BorderLayout.CENTER);
+        tabPane_wizard.add(southPane,BorderLayout.SOUTH);
+        tabPane_container.add(tabPane_wizard);
+    }
+    private void initTabPaneContainer(){
+        try {
+            _tokenViewModel = new TokenViewModel(new FileInputStream(ticketXMLFilePath), Locale.getDefault());
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (SAXException e) {
+            e.printStackTrace();
+        }
         //TopPane: contract address
         JPanel northPane = new JPanel();
         northPane.add(new JLabel("Contract:"));
@@ -235,12 +325,12 @@ public class MagicLinkTool extends JFrame{
         //render title
         initMagicLinkCreationColumnTitle();
         //render from autosaved magiclink.csv
-        ArrayList<MagicLinkDataModel> magicLinkDataModelArrayList = loadMagicLinksFromCSV();
-        if(magicLinkDataModelArrayList==null||magicLinkDataModelArrayList.size()==0){
+
+        if(_magicLinkDataModelArrayList==null||_magicLinkDataModelArrayList.size()==0){
             addAnotherTicket(null);
         }else{
-            for(int i=0;i<magicLinkDataModelArrayList.size();++i){
-                addAnotherTicket(magicLinkDataModelArrayList.get(i));
+            for(int i=0;i<_magicLinkDataModelArrayList.size();++i){
+                addAnotherTicket(_magicLinkDataModelArrayList.get(i));
             }
         }
 
@@ -257,14 +347,10 @@ public class MagicLinkTool extends JFrame{
         tabPane_container.add(northPane,BorderLayout.NORTH);
         tabPane_container.add(centerPane,BorderLayout.CENTER);
         tabPane_container.add(buttonAddAnother,BorderLayout.SOUTH);
-        mainSplitPane_tabPane.addTab("Meetup[x]",null, tabPane_container, "");
-        mainSplitPane_tabPane.setMnemonicAt(0, KeyEvent.VK_1);
-        mainSplitPane_tabPane.addTab("[+]",null, null, "");
-        mainSplitPane_tabPane.setMnemonicAt(0, KeyEvent.VK_2);
-        mainSplitPane_tabPane.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
-        mainSplitPane_tabPane.setMinimumSize(new Dimension(0,300));
+        tabPane_wizard.setVisible(false);
+        this.setResizable(true);
+        this.pack();
     }
-
     // render the column title by xml attributes + token status/remark
     private void initMagicLinkCreationColumnTitle(){
         int gridx,gridy;
@@ -851,5 +937,58 @@ public class MagicLinkTool extends JFrame{
                     "unexpected error try to create "+filePath);
             return false;
         }
+    }
+
+    public void updateContractAddress(String networkid, String contractAddress){
+        //update xml
+        DocumentBuilder dBuilder;
+        Document xml=null;
+        Transformer transformer=null;
+        try {
+            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+            dBuilder = dbFactory.newDocumentBuilder();
+            xml = dBuilder.parse(ticketXMLTemplate);
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            transformer = transformerFactory.newTransformer();
+            createFileIfNotExists(ticketXMLFilePath);
+
+            xml.getDocumentElement().normalize(); // also good for parcel
+            NodeList contractList = xml.getElementsByTagName("contract");
+            //.getElementById("holding_contract");
+            for(int i=0;i<contractList.getLength();++i){
+                Element ele = (Element)contractList.item(i);
+                if(ele.getAttribute("id").equals("holding_contract")){
+                    NodeList addressNodes = ele.getElementsByTagName("address");
+                    int size = addressNodes.getLength();
+                    for(int j=0;j<size;j++){
+                        ele.removeChild(addressNodes.item(0));
+                    }
+                    Element newNode = xml.createElement("address");
+                    newNode.setAttribute("network",networkid);
+                    newNode.setTextContent(contractAddress);
+                    ele.appendChild(newNode);
+                    break;
+                }
+            }
+
+            DOMSource source = new DOMSource(xml);
+            StreamResult result = new StreamResult(new File(ticketXMLFilePath));
+            transformer.transform(source, result);
+
+            this.initTabPaneContainer();
+        } catch (ParserConfigurationException e) {
+            e.printStackTrace();
+            return;
+        } catch (SAXException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (TransformerConfigurationException e) {
+            e.printStackTrace();
+        } catch (TransformerException e) {
+            e.printStackTrace();
+        }
+
+
     }
 }
