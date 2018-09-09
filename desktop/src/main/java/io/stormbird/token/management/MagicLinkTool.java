@@ -347,7 +347,9 @@ public class MagicLinkTool extends JFrame{
         tabPane_container.add(northPane,BorderLayout.NORTH);
         tabPane_container.add(centerPane,BorderLayout.CENTER);
         tabPane_container.add(buttonAddAnother,BorderLayout.SOUTH);
-        tabPane_wizard.setVisible(false);
+        if(tabPane_wizard!=null) {
+            tabPane_wizard.setVisible(false);
+        }
         this.setResizable(true);
         this.pack();
     }
