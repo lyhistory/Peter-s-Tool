@@ -1,9 +1,14 @@
 apply plugin: 'application'
-
+repositories {
+    mavenCentral()
+}
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     compile project(path: ':lib')
-    compile ('org.web3j:core:3.1.1','org.apache.commons:commons-csv:1.5')
+    compile ('org.web3j:core:3.1.1-android','org.apache.commons:commons-csv:1.5')
+    compile ('org.json:json:20171018')
+
+    testImplementation 'junit:junit:4.12'
 }
 
 sourceSets {

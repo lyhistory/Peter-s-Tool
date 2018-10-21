@@ -2,16 +2,16 @@ package io.stormbird.token.management;
 
 import io.stormbird.token.entity.EthereumReadBuffer;
 import io.stormbird.token.management.CustomComponents.DateTimePicker;
-import io.stormbird.token.management.CustomComponents.WizardDialog;
 import io.stormbird.token.management.Model.*;
-import io.stormbird.token.tools.TokenDefinition;
+import io.stormbird.token.management.Util.KeyStoreManager;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.web3j.crypto.Credentials;
 import org.web3j.utils.Convert;
@@ -61,7 +61,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class MagicLinkTool extends JFrame{
     public InputStream ticketXMLTemplate = getClass().getResourceAsStream("/MeetupContract.xml");
     public String ticketXMLFilePath = "./desktop/res/MeetupContract.xml";
-    public String privateKeyFilePath = "./desktop/res/wallets.key";
     public String magicLinksCSVPath = "./desktop/res/magiclinks.csv";
 
     private JSplitPane mainSplitPane;
@@ -847,15 +846,22 @@ public class MagicLinkTool extends JFrame{
     private Map<String,String> loadWalletFromKeystore(){
         Map<String,String> keys = new ConcurrentHashMap<>();
         try {
-            Reader reader = Files.newBufferedReader(Paths.get(privateKeyFilePath));
-            CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT);
-            int i=0;
-            for (CSVRecord csvRecord : csvParser) {
-                if(i!=0) {
-                    keys.put(csvRecord.get(0), csvRecord.get(1));
-                }
-                ++i;
+            KeyStoreManager manager=new KeyStoreManager();
+            JSONArray array=manager.getKeys();
+            for(int i=0; i<array.length();i++){
+                JSONObject obj = array.getJSONObject(i);
+                keys.put(obj.getString("address"),obj.getString("privatekey"));
             }
+//            Reader reader = Files.newBufferedReader(Paths.get(privateKeyFilePath));
+//            CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT);
+//            int i=0;
+//            for (CSVRecord csvRecord : csvParser) {
+//                if(i!=0) {
+//                    keys.put(csvRecord.get(0), csvRecord.get(1));
+//                }
+//                ++i;
+//            }
+
         }catch (Exception ex){
         }
         return keys;
@@ -884,19 +890,24 @@ public class MagicLinkTool extends JFrame{
     }
     private  void savePrivateKey(){
         if(comboBoxKeysList.getItemCount()>0) {
-            if (createFileIfNotExists(privateKeyFilePath)) {
-                try {
-                    BufferedWriter writer = Files.newBufferedWriter(Paths.get(privateKeyFilePath));
-                    CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader("PrivateKey", "Address"));
-                    for (int i = 0; i < comboBoxKeysList.getItemCount(); ++i) {
-                        ComboBoxSimpleItem item = (ComboBoxSimpleItem) comboBoxKeysList.getItemAt(i);
-                        csvPrinter.printRecord(item.getValue(), item.getKey());
-                    }
-                    csvPrinter.flush();
-                    writer.close();
-                } catch (Exception ex) {
-
+            try {
+                //BufferedWriter writer = Files.newBufferedWriter(Paths.get(privateKeyFilePath));
+                //CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader("PrivateKey", "Address"));
+                JSONArray array=new JSONArray();
+                for (int i = 0; i < comboBoxKeysList.getItemCount(); ++i) {
+                    ComboBoxSimpleItem item = (ComboBoxSimpleItem) comboBoxKeysList.getItemAt(i);
+                    //csvPrinter.printRecord(item.getValue(), item.getKey());
+                    JSONObject jo=new JSONObject();
+                    jo.put("privatekey",item.getValue());
+                    jo.put("address",item.getKey());
+                    array.put(jo);
                 }
+                KeyStoreManager manager=new KeyStoreManager();
+                manager.storeKeys(array);
+                //csvPrinter.flush();
+                //writer.close();
+            } catch (Exception ex) {
+
             }
         }
     }
