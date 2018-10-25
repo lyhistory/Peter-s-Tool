@@ -2,23 +2,21 @@ package io.stormbird.wallet.ui;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.app.Dialog;
-import android.app.DownloadManager;
 import android.arch.lifecycle.ViewModelProviders;
-import android.content.BroadcastReceiver;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.provider.Settings;
 import android.support.annotation.Nullable;
 import android.support.design.widget.BottomSheetDialog;
+import android.support.multidex.MultiDex;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -36,6 +34,7 @@ import android.view.View;
 import android.widget.Toast;
 
 import java.io.File;
+import java.lang.reflect.Method;
 
 import javax.inject.Inject;
 
@@ -47,7 +46,6 @@ import io.stormbird.wallet.entity.DownloadInterface;
 import io.stormbird.wallet.entity.DownloadReceiver;
 import io.stormbird.wallet.entity.ErrorEnvelope;
 import io.stormbird.wallet.entity.Wallet;
-import io.stormbird.wallet.service.AssetDefinitionService;
 import io.stormbird.wallet.util.RootUtil;
 import io.stormbird.wallet.viewmodel.BaseNavigationActivity;
 import io.stormbird.wallet.viewmodel.HomeViewModel;
@@ -57,6 +55,7 @@ import io.stormbird.wallet.widget.AWalletConfirmationDialog;
 import io.stormbird.wallet.widget.DepositView;
 import io.stormbird.wallet.widget.SystemView;
 
+import static io.stormbird.wallet.widget.AWalletBottomNavigationView.DAPP_BROWSER;
 import static io.stormbird.wallet.widget.AWalletBottomNavigationView.MARKETPLACE;
 import static io.stormbird.wallet.widget.AWalletBottomNavigationView.SETTINGS;
 import static io.stormbird.wallet.widget.AWalletBottomNavigationView.TRANSACTIONS;
@@ -76,9 +75,16 @@ public class HomeActivity extends BaseNavigationActivity implements View.OnClick
     private AWalletConfirmationDialog cDialog;
     private String buildVersion;
     private NewSettingsFragment settingsFragment;
+    private DappBrowserFragment dappBrowserFragment;
 
     public static final int RC_DOWNLOAD_EXTERNAL_WRITE_PERM = 222;
     public static final int RC_ASSET_EXTERNAL_WRITE_PERM = 223;
+
+    @Override
+    protected void attachBaseContext(Context base) {
+        super.attachBaseContext(base);
+        MultiDex.install(this);
+    }
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -89,6 +95,8 @@ public class HomeActivity extends BaseNavigationActivity implements View.OnClick
 
         toolbar();
 
+        dappBrowserFragment = new DappBrowserFragment();
+        settingsFragment = new NewSettingsFragment();
         viewPager = findViewById(R.id.view_pager);
         pagerAdapter = new ScreenSlidePagerAdapter(getSupportFragmentManager());
         viewPager.setAdapter(pagerAdapter);
@@ -136,6 +144,18 @@ public class HomeActivity extends BaseNavigationActivity implements View.OnClick
 
         viewModel.loadExternalXMLContracts();
         downloadReceiver = new DownloadReceiver(this, this);
+
+        if (getIntent() != null && getIntent().getStringExtra("url") != null) {
+            String url = getIntent().getStringExtra("url");
+
+            if (dappBrowserFragment == null) {
+                dappBrowserFragment = new DappBrowserFragment();
+            }
+            Bundle bundle = new Bundle();
+            bundle.putString("url", url);
+            dappBrowserFragment.setArguments(bundle);
+            showPage(DAPP_BROWSER);
+        }
     }
 
     private void onError(ErrorEnvelope errorEnvelope)
@@ -150,11 +170,27 @@ public class HomeActivity extends BaseNavigationActivity implements View.OnClick
         viewModel.prepare();
         checkRoot();
         //check clipboard
-        String importData = ImportTokenActivity.getMagiclinkFromClipboard(this);
-        if (importData != null)
+        ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+        try
         {
-            //let's try to import the link
-            viewModel.showImportLink(this, importData);
+            if (clipboard != null && clipboard.getPrimaryClip() != null)
+            {
+                ClipData.Item clipItem = clipboard.getPrimaryClip().getItemAt(0);
+                if (clipItem != null)
+                {
+                    CharSequence clipText = clipItem.getText();
+                    //String importData = ImportTokenActivity.getMagiclinkFromClipboard(this);
+                    if (clipText != null && clipText.length() > 60 && clipText.length() < 300)
+                    {
+                        //let's try to import the link
+                        viewModel.showImportLink(this, clipText.toString());
+                    }
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
         }
     }
 
@@ -167,8 +203,26 @@ public class HomeActivity extends BaseNavigationActivity implements View.OnClick
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_add, menu);
+    public boolean onCreateOptionsMenu(Menu menu)
+    {
+        switch (viewPager.getCurrentItem())
+        {
+            case DAPP_BROWSER:
+                if (dappBrowserFragment == null) dappBrowserFragment = new DappBrowserFragment();
+                if (dappBrowserFragment.getUrlIsBookmark())
+                {
+                    getMenuInflater().inflate(R.menu.menu_added, menu);
+                }
+                else
+                {
+                    getMenuInflater().inflate(R.menu.menu_add_bookmark, menu);
+                }
+                getMenuInflater().inflate(R.menu.menu_bookmarks, menu);
+                break;
+            default:
+                getMenuInflater().inflate(R.menu.menu_add, menu);
+                break;
+        }
         return super.onCreateOptionsMenu(menu);
     }
 
@@ -187,6 +241,31 @@ public class HomeActivity extends BaseNavigationActivity implements View.OnClick
                 viewModel.showAddToken(this);
             }
             break;
+            case android.R.id.home: {
+                dappBrowserFragment.homePressed();
+                return true;
+            }
+            case R.id.action_add_bookmark: {
+                dappBrowserFragment.addBookmark();
+                invalidateOptionsMenu();
+                return true;
+            }
+            case R.id.action_bookmarks: {
+                dappBrowserFragment.viewBookmarks();
+                return true;
+            }
+            case R.id.action_added: {
+                dappBrowserFragment.removeBookmark();
+                invalidateOptionsMenu();
+                return true;
+            }
+            case R.id.action_reload: {
+                dappBrowserFragment.reloadPage();
+                return true;
+            }
+            case R.id.action_share: {
+                dappBrowserFragment.share();
+            }
         }
         return super.onOptionsItemSelected(item);
     }
@@ -211,8 +290,8 @@ public class HomeActivity extends BaseNavigationActivity implements View.OnClick
                 showPage(TRANSACTIONS);
                 return true;
             }
-            case MARKETPLACE: {
-                showPage(MARKETPLACE);
+            case DAPP_BROWSER: {
+                showPage(DAPP_BROWSER);
                 return true;
             }
             case WALLET: {
@@ -221,6 +300,9 @@ public class HomeActivity extends BaseNavigationActivity implements View.OnClick
             }
             case SETTINGS: {
                 showPage(SETTINGS);
+                return true;
+            }
+            case MARKETPLACE: {
                 return true;
             }
         }
@@ -268,34 +350,44 @@ public class HomeActivity extends BaseNavigationActivity implements View.OnClick
 
     private void showPage(int page) {
         switch (page) {
-            case MARKETPLACE: {
-                viewPager.setCurrentItem(MARKETPLACE);
-                setTitle(getString(R.string.toolbar_header_marketplace));
-                selectNavigationItem(MARKETPLACE);
+            case DAPP_BROWSER: {
+                viewPager.setCurrentItem(DAPP_BROWSER);
+                setTitle(getString(R.string.toolbar_header_browser));
+                selectNavigationItem(DAPP_BROWSER);
+                enableDisplayHomeAsHome(true);
+                invalidateOptionsMenu();
                 break;
             }
             case WALLET: {
                 viewPager.setCurrentItem(WALLET);
                 setTitle(getString(R.string.toolbar_header_wallet));
                 selectNavigationItem(WALLET);
+                enableDisplayHomeAsHome(false);
+                invalidateOptionsMenu();
                 break;
             }
             case SETTINGS: {
                 viewPager.setCurrentItem(SETTINGS);
                 setTitle(getString(R.string.toolbar_header_settings));
                 selectNavigationItem(SETTINGS);
+                enableDisplayHomeAsHome(false);
+                invalidateOptionsMenu();
                 break;
             }
             case TRANSACTIONS: {
                 viewPager.setCurrentItem(TRANSACTIONS);
                 setTitle(getString(R.string.toolbar_header_transactions));
                 selectNavigationItem(TRANSACTIONS);
+                enableDisplayHomeAsHome(false);
+                invalidateOptionsMenu();
                 break;
             }
             default:
                 viewPager.setCurrentItem(WALLET);
                 setTitle(getString(R.string.toolbar_header_wallet));
                 selectNavigationItem(WALLET);
+                enableDisplayHomeAsHome(false);
+                invalidateOptionsMenu();
                 break;
         }
     }
@@ -308,12 +400,13 @@ public class HomeActivity extends BaseNavigationActivity implements View.OnClick
         @Override
         public Fragment getItem(int position) {
             switch (position) {
-                case MARKETPLACE:
-                    return new MarketplaceFragment();
+                case DAPP_BROWSER:
+                    if (dappBrowserFragment == null) dappBrowserFragment = new DappBrowserFragment();
+                    return dappBrowserFragment;
                 case WALLET:
                     return new WalletFragment();
                 case SETTINGS:
-                    settingsFragment = new NewSettingsFragment();
+                    if (settingsFragment == null) settingsFragment = new NewSettingsFragment();
                     return settingsFragment;
                 case TRANSACTIONS:
                     return new TransactionsFragment();
@@ -366,6 +459,12 @@ public class HomeActivity extends BaseNavigationActivity implements View.OnClick
         cDialog.show();
     }
 
+    @Override
+    public void resetToolbar()
+    {
+        invalidateOptionsMenu();
+    }
+
     private void hideDialog()
     {
         if (cDialog != null && cDialog.isShowing()) {
@@ -401,7 +500,6 @@ public class HomeActivity extends BaseNavigationActivity implements View.OnClick
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults)
     {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
         if (requestCode == RC_DOWNLOAD_EXTERNAL_WRITE_PERM || requestCode == RC_ASSET_EXTERNAL_WRITE_PERM)
         {
             //check permission is granted
@@ -477,5 +575,28 @@ public class HomeActivity extends BaseNavigationActivity implements View.OnClick
         SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
         pref.edit().putLong("install_time", 0).apply();
         finish();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    @SuppressLint("RestrictedApi")
+    @Override
+    protected boolean onPrepareOptionsPanel(View view, Menu menu) {
+        if (menu != null) {
+            if (menu.getClass().getSimpleName().equals("MenuBuilder")) {
+                try {
+                    Method m = menu.getClass().getDeclaredMethod(
+                            "setOptionalIconsVisible", Boolean.TYPE);
+                    m.setAccessible(true);
+                    m.invoke(menu, true);
+                } catch (Exception e) {
+                    Log.e(getClass().getSimpleName(), "onMenuOpened...unable to set icons for overflow menu", e);
+                }
+            }
+        }
+        return super.onPrepareOptionsPanel(view, menu);
     }
 }

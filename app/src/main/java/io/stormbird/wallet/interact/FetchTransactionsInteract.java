@@ -36,22 +36,15 @@ public class FetchTransactionsInteract {
                 .observeOn(AndroidSchedulers.mainThread());
     }
 
-    public Observable<TokenTransaction[]> fetch(Wallet wallet, Token t) {
+    public Observable<TokenTransaction[]> fetch(Wallet wallet, Token t, long lastBlock) {
         return transactionRepository
-                .fetchTokenTransaction(wallet, t)
+                .fetchTokenTransaction(wallet, t, lastBlock)
                 .subscribeOn(Schedulers.io());
     }
 
     public Observable<Transaction[]> fetchNetworkTransactions(Wallet wallet, long lastBlock) {
         return transactionRepository
                 .fetchNetworkTransaction(wallet, lastBlock)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread());
-    }
-
-    public Observable<Transaction[]> fetchInternalTransactions(Wallet wallet, String feemaster) {
-        return transactionRepository
-                .fetchInternalTransactionsNetwork(wallet, feemaster)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread());
     }

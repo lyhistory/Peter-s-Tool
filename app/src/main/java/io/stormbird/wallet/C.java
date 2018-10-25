@@ -12,7 +12,7 @@ public abstract class C {
     public static final String KOVAN_NETWORK_NAME = "Kovan (Test)";
     public static final String ROPSTEN_NETWORK_NAME = "Ropsten (Test)";
     public static final String SOKOL_NETWORK_NAME = "Sokol (Test)";
-    public static final String RINKEBY_NETWORK_NAME = "Rinkeby (Test)" ;
+    public static final String RINKEBY_NETWORK_NAME = "Rinkeby (Test)";
 
     public static final String ETHEREUM_TICKER = "ethereum";
     public static final String POA_TIKER = "poa";
@@ -45,6 +45,9 @@ public abstract class C {
     public static final String IMPORT_STRING = "TOKEN_IMPORT";
     public static final String EXTRA_PRICE = "TOKEN_PRICE";
     public static final String EXTRA_STATE = "TRANSFER_STATE";
+    public static final String EXTRA_WEB3TRANSACTION = "WEB3_TRANSACTION";
+    public static final String EXTRA_NETWORK_NAME = "NETWORK_NAME";
+    public static final String EXTRA_NETWORK_MAINNET = "NETWORK_MAINNET";
 
     public static final String PRUNE_ACTIVITY =
             "io.stormbird.wallet.PRUNE_ACTIVITY";
@@ -57,7 +60,10 @@ public abstract class C {
             "io.stormbird.wallet.CHANGED_LOCALE";
     public static final String DOWNLOAD_READY =
             "io.stormbird.wallet.DOWNLOAD_READY";
-
+    public static final String PAGE_LOADED =
+            "io.stormbird.wallet.PAGE_LOADED";
+    public static final String RESET_TOOLBAR =
+            "io.stormbird.wallet.RESET_TOOLBAR";
     public static final String COINBASE_WIDGET_CODE = "88d6141a-ff60-536c-841c-8f830adaacfd";
     public static final String SHAPESHIFT_KEY = "c4097b033e02163da6114fbbc1bf15155e759ddfd8352c88c55e7fef162e901a800e7eaecf836062a0c075b2b881054e0b9aa2324be7bc3694578493faf59af4";
     public static final String CHANGELLY_REF_ID = "968d4f0f0bf9";
@@ -111,5 +117,15 @@ public abstract class C {
         String MARKETPLACE_EVENT = "marketplace_event";
         String SHOULD_SHOW_SECURITY_WARNING = "should_show_security_warning";
         String FROM_SETTINGS = "from_settings";
+    }
+
+    public static final String ETH_RPC_URL = "https://mainnet.infura.io/llyrtzQ3YhkdESt2Fzrk";
+    public static final String DAPP_LASTURL_KEY = "dappURL";
+    public static final String DAPP_BROWSER_HISTORY = "dappBrowserHistory";
+    public static final String DAPP_BROWSER_BOOKMARKS = "dappBrowserBookmarks";
+    public static final String DAPP_DEFAULT_URL = "https://www.stateofthedapps.com/";
+
+    public enum TokenStatus {
+        DEFAULT, PENDING, INCOMPLETE
     }
 }

@@ -2,10 +2,15 @@ package io.stormbird.wallet.repository;
 
 import android.text.TextUtils;
 
+import org.web3j.protocol.Web3j;
+import org.web3j.protocol.core.DefaultBlockParameterName;
+import org.web3j.protocol.core.methods.response.EthGetTransactionCount;
+
 import io.stormbird.wallet.entity.NetworkInfo;
 import io.stormbird.wallet.entity.Ticker;
 import io.stormbird.wallet.service.TickerService;
 
+import java.math.BigInteger;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -26,46 +31,40 @@ public class EthereumNetworkRepository implements EthereumNetworkRepositoryType 
 
 	private final NetworkInfo[] NETWORKS = new NetworkInfo[] {
 			new NetworkInfo(ETHEREUM_NETWORK_NAME, ETH_SYMBOL,
-                    "https://mainnet.infura.io/llyrtzQ3YhkdESt2Fzrk",
-                    "https://api.trustwalletapp.com/",
+                    "https://mainnet.infura.io/v3/da3717f25f824cc1baa32d812386d93f",
                     "https://etherscan.io/tx/",1, true,
 							"https://ethereum.awallet.io/",
 							"https://api.etherscan.io/"),
            new NetworkInfo(CLASSIC_NETWORK_NAME, ETC_SYMBOL,
                     "https://mewapi.epool.io/",
-                    "https://classic.trustwalletapp.com",
                     "https://gastracker.io/tx/",61, true),
             new NetworkInfo(POA_NETWORK_NAME, POA_SYMBOL,
                     "https://core.poa.network/",
-                    "https://poa.trustwalletapp.com",
                     "https://poaexplorer.com/txid/search/", 99, false),
 			new NetworkInfo(KOVAN_NETWORK_NAME, ETH_SYMBOL,
-                    "https://kovan.infura.io/llyrtzQ3YhkdESt2Fzrk",
-                    "https://kovan.trustwalletapp.com/",
+                    "https://kovan.infura.io/v3/da3717f25f824cc1baa32d812386d93f",
                     "https://kovan.etherscan.io/tx/", 42, false,
 							null,
 							"https://api-kovan.etherscan.io/"),
 			new NetworkInfo(ROPSTEN_NETWORK_NAME, ETH_SYMBOL,
 							"http://66.96.208.58:8545/",
-                    "https://ropsten.trustwalletapp.com/",
                     "https://ropsten.etherscan.io/tx/",3, false,
-							"https://ropsten.infura.io/LY55hqqffzZcQ0b513JJ",
+							"https://ropsten.infura.io/v3/da3717f25f824cc1baa32d812386d93f",
 					"https://api-ropsten.etherscan.io/"),
             new NetworkInfo(SOKOL_NETWORK_NAME, POA_SYMBOL,
                     "https://sokol.poa.network",
-                    "https://trust-sokol.herokuapp.com/",
                     "https://sokol-explorer.poa.network/account/",77, false),
 			new NetworkInfo(RINKEBY_NETWORK_NAME, ETH_SYMBOL,
-							"https://rinkeby.infura.io/LY55hqqffzZcQ0b513JJ",
-							"https://ropsten.trustwalletapp.com/",
+							"https://rinkeby.infura.io/v3/da3717f25f824cc1baa32d812386d93f",
 							"https://rinkeby.etherscan.io/tx/",4, false,
-							"https://rinkeby.infura.io/LY55hqqffzZcQ0b513JJ",
+							"https://rinkeby.infura.io/v3/da3717f25f824cc1baa32d812386d93f",
 							"https://api-rinkeby.etherscan.io/"),
 	};
 
 	private final PreferenceRepositoryType preferences;
     private final TickerService tickerService;
     private NetworkInfo defaultNetwork;
+    private String currentActiveRPC;
     private final Set<OnNetworkChangeListener> onNetworkChangedListeners = new HashSet<>();
 
     public EthereumNetworkRepository(PreferenceRepositoryType preferenceRepository, TickerService tickerService) {
@@ -93,7 +92,38 @@ public class EthereumNetworkRepository implements EthereumNetworkRepositoryType 
 		return defaultNetwork;
 	}
 
+	// fetches the last transaction nonce; if it's identical to the last used one then increment by one
+	// to ensure we don't get transaction replacement
 	@Override
+	public Single<BigInteger> getLastTransactionNonce(Web3j web3j, String walletAddress)
+	{
+		return Single.fromCallable(() -> {
+			EthGetTransactionCount ethGetTransactionCount = web3j
+					.ethGetTransactionCount(walletAddress, DefaultBlockParameterName.PENDING)
+					.send();
+			return ethGetTransactionCount.getTransactionCount();
+		});
+	}
+
+	@Override
+	public void setActiveRPC(String rpcURL)
+	{
+		currentActiveRPC = rpcURL;
+	}
+
+	@Override
+	public String getActiveRPC()
+	{
+		if (currentActiveRPC != null)
+		{
+			return currentActiveRPC;
+		}
+		else
+		{
+			return defaultNetwork.rpcServerUrl;
+		}
+	}
+
 	public void setDefaultNetworkInfo(NetworkInfo networkInfo) {
 		defaultNetwork = networkInfo;
 		preferences.setDefaultNetwork(defaultNetwork.name);

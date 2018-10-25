@@ -6,6 +6,7 @@ import io.stormbird.wallet.entity.OrderContractAddressPair;
 import io.stormbird.wallet.entity.Ticker;
 import io.stormbird.wallet.entity.Ticket;
 import io.stormbird.wallet.entity.Token;
+import io.stormbird.wallet.entity.TokenInfo;
 import io.stormbird.wallet.entity.Wallet;
 import io.stormbird.wallet.repository.TokenRepositoryType;
 
@@ -40,6 +41,10 @@ public class FetchTokensInteract {
                 .observeOn(AndroidSchedulers.mainThread());
     }
 
+    public Observable<TokenInfo> getTokenInfo(String address) {
+        return tokenRepository.update(address);
+    }
+
     private Map<String, Token> tokensToMap(Token[] tokenArray) {
         Map<String, Token> tokenMap = new HashMap<>();
         for (Token t : tokenArray) tokenMap.put(t.getAddress(), t);
@@ -64,8 +69,8 @@ public class FetchTokensInteract {
                 .observeOn(AndroidSchedulers.mainThread());
     }
 
-    public Observable<Token[]> fetchStoredWithEth(Wallet wallet) {
-        return tokenRepository.fetchActiveStoredPlusEth(wallet.address)
+    public Observable<Token[]> fetchStoredWithEth(NetworkInfo network, Wallet wallet) {
+        return tokenRepository.fetchActiveStoredPlusEth(network, wallet.address)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread());
     }
@@ -107,6 +112,18 @@ public class FetchTokensInteract {
         return tokenRepository.fetchActiveTokenBalance(wallet.address, token)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread());
+    }
+
+    public Token updateDefaultBalance(Token token)
+    {
+        return tokenRepository.fetchActiveDefaultTokenBalance(token)
+                .subscribeOn(Schedulers.io()).blockingSingle();
+    }
+
+    public Token updateDefaultBalance(Token token, NetworkInfo network, Wallet wallet)
+    {
+        return tokenRepository.fetchActiveTokenBalance(token, network, wallet)
+                .subscribeOn(Schedulers.io()).blockingSingle();
     }
 
     public Observable<OrderContractAddressPair> updateBalancePair(Token token, MagicLinkData order)

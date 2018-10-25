@@ -80,13 +80,6 @@ public class QRSelectionTest
                 return null;
             }
 
-
-            @Override
-            public Observable<Transaction[]> fetchInternalTransactionsNetwork(Wallet wallet, String feemaster)
-            {
-                return null;
-            }
-
             @Override
             public Observable<TokenTransaction[]> fetchTokenTransaction(Wallet wallet, Token token) {
                 return null;
@@ -99,6 +92,12 @@ public class QRSelectionTest
 
             @Override
             public Single<String> createTransaction(Wallet from, String toAddress, BigInteger subunitAmount, BigInteger gasPrice, BigInteger gasLimit, byte[] data, String password) {
+                return null;
+            }
+
+            @Override
+            public Single<String> createTransaction(Wallet from, BigInteger gasPrice, BigInteger gasLimit, String data, String password)
+            {
                 return null;
             }
 
@@ -171,7 +170,7 @@ public class QRSelectionTest
         final int indicesCount = 8*2;
         final int combinations = (int)Math.pow(2, indicesCount);
 
-        for (int i = 1; i < combinations; i += 7) // don't pick all the combinations
+        for (int i = 1; i < combinations; i += 1) // pick all the combinations, even though it slows the test down
         {
             QREncoding qr = new QREncoding();
             qrList.add(qr);

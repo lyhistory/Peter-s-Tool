@@ -28,8 +28,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import io.stormbird.token.entity.BadContract;
+import okhttp3.OkHttpClient;
 import rx.schedulers.Schedulers;
 
 import static org.web3j.protocol.core.methods.request.Transaction.createEthCallTransaction;
@@ -37,15 +39,20 @@ import static org.web3j.protocol.core.methods.request.Transaction.createEthCallT
 public class TransactionHandler
 {
     private static final String CONTRACT_ADDR = "0x6ae0e6d98955ba13dacf654c4819e6a1886e978f";
-    private static final String MAIN_NODEURL = "https://mainnet.infura.io/llyrtzQ3YhkdESt2Fzrk";
-    private static final String ROPSTEN_NODEURL = "https://ropsten.infura.io/llyrtzQ3YhkdESt2Fzrk";
-    private static final String RINKEBY_NODEURL = "https://rinkeby.infura.io/llyrtzQ3YhkdESt2Fzrk";
+    private static final String MAIN_NODEURL = "https://mainnet.infura.io/v3/da3717f25f824cc1baa32d812386d93f";
+    private static final String ROPSTEN_NODEURL = "https://ropsten.infura.io/v3/da3717f25f824cc1baa32d812386d93f";
+    private static final String RINKEBY_NODEURL = "https://rinkeby.infura.io/v3/da3717f25f824cc1baa32d812386d93f";
 
     private static Web3j mWeb3;
 
     public TransactionHandler()
     {
-        mWeb3 = Web3j.build(new HttpService(MAIN_NODEURL));
+        OkHttpClient.Builder builder = new OkHttpClient.Builder();
+        builder.connectTimeout(20, TimeUnit.SECONDS);
+        builder.readTimeout(20, TimeUnit.SECONDS);
+
+        HttpService service = new HttpService(MAIN_NODEURL, builder.build(), false);
+        mWeb3 = Web3j.build(service);
 
         try
         {

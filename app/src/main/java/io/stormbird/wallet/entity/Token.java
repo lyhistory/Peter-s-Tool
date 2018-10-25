@@ -23,15 +23,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static io.stormbird.wallet.C.ETH_SYMBOL;
+import static io.stormbird.wallet.interact.SetupTokensInteract.EXPIRED_CONTRACT;
+import static io.stormbird.wallet.interact.SetupTokensInteract.UNKNOWN_CONTRACT;
 
 public class Token implements Parcelable
 {
     public final TokenInfo tokenInfo;
     public BigDecimal balance;
-    public final long updateBlancaTime;
+    public long updateBlancaTime;
     public boolean balanceIsLive = false;
     public boolean isERC20 = false; //TODO: when we see ERC20 functions in transaction decoder switch this on
     private boolean isEth = false;
+    private String tokenWallet;
+    private short tokenNetwork;
 
     public TokenTicker ticker;
 
@@ -56,6 +60,11 @@ public class Token implements Parcelable
     public boolean hasPositiveBalance() {
         if (balance != null) return !balance.equals(BigDecimal.ZERO);
         else return false;
+    }
+
+    public boolean independentUpdate()
+    {
+        return false;
     }
 
     public String getFullBalance() {
@@ -102,12 +111,20 @@ public class Token implements Parcelable
         }
     }
 
+    public void setIsTerminated(RealmToken realmToken)
+    {
+        realmToken.setUpdatedTime(-1);
+        updateBlancaTime = -1;
+    }
+    public boolean isTerminated() { return (updateBlancaTime == -1); }
+
     public String getAddress() {
         return tokenInfo.address;
     }
     public String getFullName()
     {
-        if (tokenInfo.name == null) return null;
+        if (isTerminated()) return EXPIRED_CONTRACT;
+        if (isBad()) return UNKNOWN_CONTRACT;
         return tokenInfo.name + (tokenInfo.symbol != null && tokenInfo.symbol.length() > 0 ? "(" + tokenInfo.symbol.toUpperCase() + ")" : "");
     }
 
@@ -177,37 +194,32 @@ public class Token implements Parcelable
         holder.balanceEth.setText(value);
         holder.issuer.setText(R.string.ethereum);
 
-        if (ticker == null && tokenInfo.symbol.equals(ETH_SYMBOL))
+        if (isEthereum())
         {
             holder.textAppreciationSub.setText(R.string.appreciation);
             holder.icon.setVisibility(View.GONE);
             holder.text24HoursSub.setText(R.string.twenty_four_hours);
             holder.contractType.setVisibility(View.GONE);
             holder.contractSeparator.setVisibility(View.GONE);
-        }
-        else if (ticker == null)
-        {
-            holder.balanceCurrency.setText(EMPTY_BALANCE);
-            holder.fillIcon(null, R.mipmap.token_logo);
-            holder.text24Hours.setText(EMPTY_BALANCE);
-            holder.textAppreciation.setText(EMPTY_BALANCE);
-            holder.textAppreciationSub.setText(R.string.appreciation);
-            holder.text24HoursSub.setText(R.string.twenty_four_hours);
-            if (isERC20)
-            {
-                holder.contractType.setVisibility(View.VISIBLE);
-                holder.contractSeparator.setVisibility(View.VISIBLE);
-                holder.contractType.setText(R.string.erc20);
-            }
+            holder.layoutValueDetails.setVisibility(View.VISIBLE);
         }
         else
         {
+            holder.contractType.setVisibility(View.VISIBLE);
+            holder.contractSeparator.setVisibility(View.VISIBLE);
+            holder.contractType.setText(R.string.erc20);
+            holder.layoutValueDetails.setVisibility(View.GONE);
+            //currently we don't collect the value of ERC20 tokens
+            //TODO: get ticker for ERC20 tokens
+        }
+
+        //populate ticker if we have it
+        if (ticker != null)
+        {
+            holder.layoutValueDetails.setVisibility(View.VISIBLE);
             holder.textAppreciationSub.setText(R.string.appreciation);
             holder.fillCurrency(ethBalance, ticker);
-            holder.fillIcon(ticker.image, R.mipmap.token_logo);
             holder.text24HoursSub.setText(R.string.twenty_four_hours);
-            holder.contractType.setVisibility(View.GONE);
-            holder.contractSeparator.setVisibility(View.GONE);
         }
 
         holder.balanceEth.setVisibility(View.VISIBLE);
@@ -296,6 +308,8 @@ public class Token implements Parcelable
     {
         String currentState = realmToken.getBalance();
         if (currentState == null) return true;
+        if (tokenInfo.name != null && realmToken.getName() == null) return true; //signal to update database if correct name has been fetched (node timeout etc)
+        if (tokenInfo.isStormbird != realmToken.isStormbird()) return true;
         String currentBalance = getFullBalance();
         return !currentState.equals(currentBalance);
     }
@@ -312,5 +326,25 @@ public class Token implements Parcelable
     public boolean isBad()
     {
         return tokenInfo.name == null || tokenInfo.name.length() < 2;
+    }
+
+    public boolean checkTokenWallet(String address)
+    {
+        return tokenWallet.equals(address);
+    }
+
+    public boolean checkTokenNetwork(int currentNetwork)// setTokenWallet(String tokenWallet)
+    {
+        return tokenNetwork == currentNetwork;
+    }
+
+    public void setTokenWallet(String address)
+    {
+        this.tokenWallet = address;
+    }
+
+    public void setTokenNetwork(int tokenNetwork)
+    {
+        this.tokenNetwork = (short)tokenNetwork;
     }
 }

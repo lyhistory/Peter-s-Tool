@@ -1,5 +1,6 @@
 package io.stormbird.wallet.interact;
 
+import io.reactivex.Single;
 import io.stormbird.wallet.entity.Token;
 import io.stormbird.wallet.entity.TokenInfo;
 import io.stormbird.wallet.entity.Wallet;
@@ -29,6 +30,18 @@ public class AddTokenInteract {
                 .toObservable();
     }
 
+    /**
+     * Add Token to respository process which is a single not an observable
+     * @param tokenInfo
+     * @return
+     */
+    public Single<Token> addS(TokenInfo tokenInfo) {
+        return walletRepository
+                    .getDefaultWallet()
+                    .flatMap(wallet -> tokenRepository
+                            .addToken(wallet, tokenInfo));
+    }
+
     public Observable<Token> add(TokenInfo tokenInfo, Wallet wallet) {
         return tokenRepository
                         .addToken(wallet, tokenInfo).toObservable();
@@ -45,5 +58,10 @@ public class AddTokenInteract {
 //                        .addTokens(wallet, tokenInfos))
 //                        .subscribeOn(Schedulers.io())
 //                        .observeOn(AndroidSchedulers.mainThread());
+    }
+
+    public Single<Token[]> addERC721(Wallet wallet, Token[] tokens)
+    {
+        return tokenRepository.addERC721(wallet, tokens);
     }
 }

@@ -5,6 +5,8 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.Log;
 import android.view.View;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.web3j.abi.datatypes.generated.Uint16;
@@ -16,7 +18,9 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -61,21 +65,29 @@ public class Ticket extends Token implements Parcelable
 
     private Ticket(Parcel in) {
         super(in);
-        Object[] readObjArray = in.readArray(Object.class.getClassLoader());
-        Object[] readBurnArray = in.readArray(Object.class.getClassLoader());
         balanceArray = new ArrayList<>();
         burnIndices = new ArrayList<Integer>();
-        for (Object o : readObjArray)
+        int objSize = in.readInt();
+        int burnSize = in.readInt();
+        if (objSize > 0)
         {
-            BigInteger val = (BigInteger)o;
-            balanceArray.add(val);
+            Object[] readObjArray = in.readArray(Object.class.getClassLoader());
+            for (Object o : readObjArray)
+            {
+                BigInteger val = (BigInteger)o;
+                balanceArray.add(val);
+            }
         }
 
-        //check to see if burn notice is needed
-        for (Object o : readBurnArray)
+        if (burnSize > 0)
         {
-            Integer val = (Integer)o;
-            burnIndices.add(val);
+            Object[] readBurnArray = in.readArray(Object.class.getClassLoader());
+            //check to see if burn notice is needed
+            for (Object o : readBurnArray)
+            {
+                Integer val = (Integer)o;
+                burnIndices.add(val);
+            }
         }
     }
 
@@ -110,8 +122,10 @@ public class Ticket extends Token implements Parcelable
     @Override
     public void writeToParcel(Parcel dest, int flags) {
         super.writeToParcel(dest, flags);
-        dest.writeArray(balanceArray.toArray());
-        dest.writeArray(burnIndices.toArray());
+        dest.writeInt(balanceArray.size());
+        dest.writeInt(burnIndices.size());
+        if (balanceArray.size() > 0) dest.writeArray(balanceArray.toArray());
+        if (burnIndices.size() > 0) dest.writeArray(burnIndices.toArray());
     }
 
     /**
@@ -156,9 +170,12 @@ public class Ticket extends Token implements Parcelable
     public int getTicketCount()
     {
         int count = 0;
-        for (BigInteger id : balanceArray)
+        if (balanceArray != null)
         {
-            if (id.compareTo(BigInteger.ZERO) != 0) count++;
+            for (BigInteger id : balanceArray)
+            {
+                if (id.compareTo(BigInteger.ZERO) != 0) count++;
+            }
         }
         return count;
     }
@@ -184,7 +201,6 @@ public class Ticket extends Token implements Parcelable
     @Override
     public void setupContent(TokenHolder tokenHolder, AssetDefinitionService asset)
     {
-        tokenHolder.fillIcon(null, R.mipmap.ic_alpha);
         tokenHolder.balanceEth.setVisibility(View.GONE);
         tokenHolder.balanceCurrency.setText("--");
         tokenHolder.arrayBalance.setVisibility(View.VISIBLE);
@@ -195,10 +211,11 @@ public class Ticket extends Token implements Parcelable
         tokenHolder.contractSeparator.setVisibility(View.VISIBLE);
         tokenHolder.contractType.setText(R.string.erc875);
 
-        tokenHolder.text24HoursSub.setText(R.string.burned);
-        tokenHolder.text24Hours.setText(String.valueOf(burnIndices.size()));
-        tokenHolder.textAppreciationSub.setText(R.string.marketplace);
+        //tokenHolder.text24HoursSub.setText(R.string.burned);
+        //tokenHolder.text24Hours.setText(String.valueOf(burnIndices.size()));
+        //tokenHolder.textAppreciationSub.setText(R.string.marketplace);
         tokenHolder.arrayBalance.setText(String.valueOf(getTicketCount()));
+        tokenHolder.layoutValueDetails.setVisibility(View.GONE);
     }
 
     public String populateRange(TicketRange range)
@@ -378,6 +395,7 @@ public class Ticket extends Token implements Parcelable
     {
         //read given indicies and convert into internal format, error checking to ensure
         List<Integer> idList = new ArrayList<>();
+        List<BigInteger> inventoryCopy = new ArrayList<BigInteger>(balanceArray);
 
         try
         {
@@ -390,9 +408,10 @@ public class Ticket extends Token implements Parcelable
 
                 if (thisId.compareTo(BigInteger.ZERO) != 0)
                 {
-                    int index = balanceArray.indexOf(thisId);
+                    int index = inventoryCopy.indexOf(thisId);
                     if (index > -1)
                     {
+                        inventoryCopy.set(index, BigInteger.ZERO);
                         if (!idList.contains(index))
                         {   //just make sure they didn't already add this one
                             idList.add(index);
@@ -473,6 +492,37 @@ public class Ticket extends Token implements Parcelable
         }
     }
 
+    private void blankTicketExtra(View activity)
+    {
+        try
+        {
+            TextView textVenue = activity.findViewById(R.id.venue);
+            TextView textDate = activity.findViewById(R.id.date);
+            TextView textRange = activity.findViewById(R.id.tickettext);
+            TextView textCat = activity.findViewById(R.id.cattext);
+            TextView ticketDetails = activity.findViewById(R.id.ticket_details);
+            LinearLayout ticketLayout = activity.findViewById(R.id.ticketlayout);
+            LinearLayout catLayout = activity.findViewById(R.id.catlayout);
+            LinearLayout dateLayout = activity.findViewById(R.id.datelayout);
+            LinearLayout bottomPart = activity.findViewById(R.id.bottom_part);
+
+            //textVenue.setVisibility(View.GONE);
+            textVenue.setText("");
+            textDate.setText("");
+            textRange.setText("");
+            textCat.setText("");
+            ticketDetails.setText("");
+            ticketLayout.setVisibility(View.GONE);
+            catLayout.setVisibility(View.GONE);
+            dateLayout.setVisibility(View.GONE);
+            bottomPart.setVisibility(View.GONE);
+        }
+        catch (Exception e)
+        {
+            Log.d("TICKET", e.getMessage());
+        }
+    }
+
     /**
      * This is a single method that populates any instance of graphic ticket anywhere
      *
@@ -483,7 +533,7 @@ public class Ticket extends Token implements Parcelable
      */
     public void displayTicketHolder(TicketRange range, View activity, AssetDefinitionService assetService, Context ctx)
     {
-        DateFormat date = android.text.format.DateFormat.getLongDateFormat(ctx);
+        DateFormat date = android.text.format.DateFormat.getMediumDateFormat(ctx);
         DateFormat time = android.text.format.DateFormat.getTimeFormat(ctx);
 
         TextView amount = activity.findViewById(R.id.amount);
@@ -494,6 +544,10 @@ public class Ticket extends Token implements Parcelable
         TextView cat = activity.findViewById(R.id.cattext);
         TextView details = activity.findViewById(R.id.ticket_details);
         TextView ticketTime = activity.findViewById(R.id.time);
+        ImageView ticketIcon = activity.findViewById(R.id.ticketicon);
+        ImageView catIcon = activity.findViewById(R.id.caticon);
+        LinearLayout ticketLayout = activity.findViewById(R.id.ticketlayout);
+        LinearLayout catLayout = activity.findViewById(R.id.catlayout);
 
         int numberOfTickets = range.tokenIds.size();
         if (numberOfTickets > 0)
@@ -501,53 +555,102 @@ public class Ticket extends Token implements Parcelable
             BigInteger firstTicket = range.tokenIds.get(0);
             NonFungibleToken nonFungibleToken = assetService.getNonFungibleToken(range.contractAddress, firstTicket);
 
-            String venueStr = nonFungibleToken.getAttribute("venue").text;
-            String nameStr = getTokenTitle(nonFungibleToken); //nonFungibleToken.getAttribute("category").text;
+            String nameStr = getTokenTitle(nonFungibleToken);
 
+            String venueStr = nonFungibleToken == null ? "" : nonFungibleToken.getAttribute("venue").text;
             String seatCount = String.format(Locale.getDefault(), "x%d", range.tokenIds.size());
 
             name.setText(nameStr);
             amount.setText(seatCount);
             venue.setText(venueStr);
-            ticketRange.setText(
-                    nonFungibleToken.getAttribute("countryA").text + "-" +
-                            nonFungibleToken.getAttribute("countryB").text
-            );
-            cat.setText("M" + nonFungibleToken.getAttribute("match").text);
+
+            if (!assetService.hasDefinition(getAddress()))
+            {
+                //remove all info
+                blankTicketExtra(activity);
+                return;
+            }
+
+            String countryA = nonFungibleToken.getAttribute("countryA").text;
+            String countryB = nonFungibleToken.getAttribute("countryB").text;
+
+            if (countryA.charAt(0) == 0 && countryB.charAt(0) == 0)
+            {
+                ticketLayout.setVisibility(View.GONE);
+            }
+            else
+            {
+                ticketLayout.setVisibility(View.VISIBLE);
+                ticketRange.setText(countryA + "-" + countryB);
+            }
+
+            String catTxt = nonFungibleToken.getAttribute("match").text;
+
+            if (catTxt.equals("0"))
+            {
+                catLayout.setVisibility(View.GONE);
+            }
+            else
+            {
+                catLayout.setVisibility(View.VISIBLE);
+                cat.setText("M" + catTxt);
+            }
+
             details.setText(
                     nonFungibleToken.getAttribute("locality").name + ": " +
                             nonFungibleToken.getAttribute("locality").text
             );
+
+            long eventTime = nonFungibleToken.getAttribute("time").value.longValue();
+            String eventTimeStr = nonFungibleToken.getAttribute("time").text;
+
             try
             {
-                String eventTime = nonFungibleToken.getAttribute("time").text;
-
-                if (eventTime != null)
+                if (eventTimeStr != null)
                 {
-                    ZonedDateTime datetime = new ZonedDateTime(eventTime);
+                    ZonedDateTime datetime = new ZonedDateTime(eventTimeStr);
                     ticketDate.setText(datetime.format(date));
                     ticketTime.setText(datetime.format(time));
                 }
                 else
                 {
-                    Date current = new Date();
-                    ticketDate.setText(date.format(current));
-                    ticketTime.setText(time.format(current));
+                    setDateFromTokenID(ticketDate, ticketTime, eventTime, date, time);
                 }
             }
-            catch (ParseException e)
+            catch (ParseException | IllegalArgumentException e)
             {
-                ticketDate.setText("N.A.");
+                setDateFromTokenID(ticketDate, ticketTime, eventTime, date, time);
             }
+        }
+    }
+
+    private void setDateFromTokenID(TextView ticketDate, TextView ticketTime, long eventTime, DateFormat date, DateFormat time)
+    {
+        if (eventTime > 0)
+        {
+            Calendar calendar = GregorianCalendar.getInstance(); //UTC time
+            calendar.setTimeInMillis( eventTime*1000 );
+            date.setTimeZone(calendar.getTimeZone());
+            time.setTimeZone(calendar.getTimeZone());
+            ticketDate.setText(date.format(calendar.getTime()));
+            ticketTime.setText(time.format(calendar.getTime()));
+        }
+        else
+        {
+            ticketDate.setText("N.A.");
         }
     }
 
     private String getTokenTitle(NonFungibleToken nonFungibleToken)
     {
-        String tokenTitle = nonFungibleToken.getAttribute("category").text;
-        if (tokenTitle == null || tokenTitle.length() == 0)
+        String tokenTitle = getFullName();
+        if (nonFungibleToken != null)
         {
-            tokenTitle = getFullName();
+            tokenTitle = nonFungibleToken.getAttribute("category").text;
+            if (tokenTitle == null || tokenTitle.length() == 0)
+            {
+                tokenTitle = getFullName();
+            }
         }
 
         return tokenTitle;
@@ -556,7 +659,7 @@ public class Ticket extends Token implements Parcelable
     public String getTokenName(AssetDefinitionService assetService)
     {
         //see if this token is covered by any contract
-        int networkId = assetService.getAssetDefinition(getAddress()).getNetworkFromContract(getAddress());
+        int networkId = assetService.getNetworkId(getAddress());
         if (networkId >= 1)
         {
             return assetService.getAssetDefinition(getAddress()).getTokenName();
@@ -611,7 +714,7 @@ public class Ticket extends Token implements Parcelable
 
     public void checkIsMatchedInXML(AssetDefinitionService assetService)
     {
-        int networkId = assetService.getNetworkId(getAddress());// getAssetDefinition(getAddress()).getNetworkFromContract(getAddress());
+        int networkId = assetService.getNetworkId(getAddress());
         isMatchedInXML = networkId >= 1;
     }
 

@@ -124,13 +124,6 @@ public class MarketOrderTest
                 return null;
             }
 
-
-            @Override
-            public Observable<Transaction[]> fetchInternalTransactionsNetwork(Wallet wallet, String feemaster)
-            {
-                return null;
-            }
-
             @Override
             public Observable<TokenTransaction[]> fetchTokenTransaction(Wallet wallet, Token token) {
                 return null;
@@ -143,6 +136,12 @@ public class MarketOrderTest
 
             @Override
             public Single<String> createTransaction(Wallet from, String toAddress, BigInteger subunitAmount, BigInteger gasPrice, BigInteger gasLimit, byte[] data, String password) {
+                return null;
+            }
+
+            @Override
+            public Single<String> createTransaction(Wallet from, BigInteger gasPrice, BigInteger gasLimit, String data, String password)
+            {
                 return null;
             }
 

@@ -23,10 +23,15 @@ public interface TokenLocalSource {
 
     Single<Token[]> fetchEnabledTokens(NetworkInfo networkInfo, Wallet wallet);
     Single<Token[]> fetchAllTokens(NetworkInfo networkInfo, Wallet wallet);
+    Single<Token[]> fetchERC721Tokens(Wallet wallet);
     Single<Token> fetchEnabledToken(NetworkInfo networkInfo, Wallet wallet, String address);
     Single<Token[]> fetchEnabledTokensWithBalance(NetworkInfo networkInfo, Wallet wallet);
     //Observable<Token> fetchEnabledTokensSequential(NetworkInfo networkInfo, Wallet wallet);
     Observable<List<Token>> fetchEnabledTokensSequentialList(NetworkInfo networkInfo, Wallet wallet);
     Completable saveTickers(NetworkInfo network, Wallet wallet, TokenTicker[] tokenTickers);
     Single<TokenTicker[]> fetchTickers(NetworkInfo network, Wallet wallet, Token[] tokens);
+
+    void setTokenTerminated(NetworkInfo network, Wallet wallet, Token token);
+
+    Single<Token[]> saveERC721Tokens(NetworkInfo defaultNetwork, Wallet wallet, Token[] tokens);
 }

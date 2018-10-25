@@ -31,6 +31,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/background_card_shadow"
+            android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_weight="1.2"
+            android:layout_height="wrap_content"
             android:orientation="vertical">
 
             <LinearLayout
@@ -102,7 +108,7 @@
                         android:id="@+id/datelayout"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1.5"
+                        android:layout_weight="1.2"
                         android:orientation="horizontal">
 
                         <ImageView
@@ -119,20 +125,21 @@
                             android:layout_height="wrap_content"
                             android:orientation="vertical">
 
-                        <TextView
-                            android:id="@+id/date"
-                            android:paddingRight="5dp"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="center_vertical" />
+                            <TextView
+                                android:id="@+id/date"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center_vertical"
+                                android:paddingRight="5dp"
+                                android:textSize="12sp" />
 
-                        <TextView
-                            android:id="@+id/time"
-                            android:paddingRight="5dp"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textSize="12sp"
-                            android:layout_gravity="center_vertical" />
+                            <TextView
+                                android:id="@+id/time"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center_vertical"
+                                android:paddingRight="5dp"
+                                android:textSize="12sp" />
 
                         </LinearLayout>
                     </LinearLayout>
@@ -140,7 +147,7 @@
                     <LinearLayout
                         android:id="@+id/ticketlayout"
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="35dp"
                         android:layout_gravity="center_vertical"
                         android:layout_weight="1"
                         android:orientation="horizontal">
@@ -167,7 +174,7 @@
                     <LinearLayout
                         android:id="@+id/catlayout"
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="35dp"
                         android:layout_gravity="center_vertical"
                         android:layout_weight="1"
                         android:orientation="horizontal">
@@ -258,6 +265,15 @@
                     android:textColor="@color/text_black" />
 
             </LinearLayout>
+        </LinearLayout>
+
+            <ImageView
+                android:id="@+id/image_view"
+                android:background="@drawable/ic_action_star"
+                android:layout_gravity="center_vertical"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
         </LinearLayout>
     </LinearLayout>
 </LinearLayout>
