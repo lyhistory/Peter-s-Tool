@@ -51,3 +51,5 @@ gen-external-apklibs
 tn/trustnative.aar
 **/.idea/misc.xml
 **/.idea/vcs.xml
+
+desktop/res
