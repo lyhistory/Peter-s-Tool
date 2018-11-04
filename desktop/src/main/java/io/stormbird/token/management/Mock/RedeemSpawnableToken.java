@@ -21,6 +21,12 @@ public class RedeemSpawnableToken extends JFrame{
     public RedeemSpawnableToken(){
         try {
             mainPanel = new JPanel();
+
+            mainPanel.add(new JLabel("private key:"));
+            JTextField privatekeyTextField = new JTextField();
+            privatekeyTextField.setColumns(30);
+            mainPanel.add(privatekeyTextField);
+
             mainPanel.add(new JLabel("contract address:"));
             JTextField contractTextField = new JTextField();
             contractTextField.setColumns(30);
@@ -43,9 +49,10 @@ public class RedeemSpawnableToken extends JFrame{
                                                    String contractAddr = contractTextField.getText();
                                                    String link = magicLinkTextField.getText();
                                                    String recepient = recepientAddress.getText();
+                                                   String privateKey=privatekeyTextField.getText();
                                                    if(link!="") {
                                                        MagicLinkDataModel model=parseMagicLink(link);
-                                                       MeetupContractHelper contractHelper = new MeetupContractHelper(contractAddr);
+                                                       MeetupContractHelper contractHelper = new MeetupContractHelper(contractAddr,privateKey);
                                                        Sign.SignatureData sig = sigFromByteArray(model.signature);
                                                        contractHelper.redeemSpawnableToken(BigInteger.valueOf(model.expiry),Arrays.asList(model.tickets),sig.getV(),sig.getR(),sig.getS(),recepient);
                                                    }

@@ -81,13 +81,18 @@ public class MagicLinkTool extends JFrame{
     MeetupContractHelper contractHelper;
     public MagicLinkTool(){
         try {
+            Map<String,String> keys = loadWalletFromKeystore();
             _tokenViewModel = new TokenViewModel(new FileInputStream(ticketXMLFilePath), Locale.getDefault());
-            contractHelper=new MeetupContractHelper(_tokenViewModel.comboBoxContractAddressList.get(0).getKey());
+            if(_tokenViewModel.comboBoxContractAddressList!=null
+                    &&
+                    keys!=null&&keys.size()>0) {
+                contractHelper = new MeetupContractHelper(_tokenViewModel.comboBoxContractAddressList.get(0).getKey(), keys.entrySet().iterator().next().getValue());
+            }
             _magicLinkViewMap = new ConcurrentHashMap<>();
             _magicLinkDataModelArrayList = loadMagicLinksFromCSV();
 
             this.setJMenuBar(createMenuBar());
-            this.initUpperPane();    //Private key Dropdownlist
+            this.initUpperPane(keys);    //Private key Dropdownlist
             this.initTabPane();      //Magic Link Generation Pane
             this.mainSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, mainSplitPane_topPane, mainSplitPane_tabPane);
             //this.mainSplitPane.setMinimumSize(new Dimension(900,300));
@@ -171,8 +176,8 @@ public class MagicLinkTool extends JFrame{
     }
 
     //create UpperPane: manage private key
-    private  void initUpperPane() {
-        Map<String,String> keys = loadWalletFromKeystore();
+    private  void initUpperPane(Map<String,String> keys) {
+
         mainSplitPane_topPane = new JPanel();
         FlowLayout flowLayout = new FlowLayout();
         flowLayout.setAlignment(FlowLayout.TRAILING);
@@ -901,9 +906,11 @@ public class MagicLinkTool extends JFrame{
         return magicLinkDataModelList;
     }
     private boolean checkStatus(BigInteger tokenID){
-        MeetupContractHelper.RedeemStatus status=contractHelper.checkSpawnableTokenRedeemStatus(tokenID);
-        if(status==MeetupContractHelper.RedeemStatus.Redeemed){
-            return true;
+        if(contractHelper!=null) {
+            MeetupContractHelper.RedeemStatus status = contractHelper.checkSpawnableTokenRedeemStatus(tokenID);
+            if (status == MeetupContractHelper.RedeemStatus.Redeemed) {
+                return true;
+            }
         }
         return false;
     }

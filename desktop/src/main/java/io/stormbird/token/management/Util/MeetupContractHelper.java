@@ -21,12 +21,12 @@ public class MeetupContractHelper {
         NotRedeemed,
         Unknown
     }
-    public MeetupContractHelper(String contractAddress){
+    public MeetupContractHelper(String contractAddress,String privateKey){
         web3j = Web3j.build(new HttpService
                 //("https://ropsten.infura.io/v3/3305734c1fad4ad1ab11fd0e9a74059e"));
                 ("http://127.0.0.1:8545"));
         credentials =
-                Credentials.create("1ff130c55c96dcc7e5ef1faff70c90c9533d18ea320afd0b7b997bf4a87913a2");
+                Credentials.create(privateKey);
         contractGasProvider = new DefaultGasProvider();
         contract = TicketPro.load(contractAddress,web3j,credentials,contractGasProvider);
     }
