@@ -383,10 +383,11 @@ public class MagicLinkTool extends JFrame{
 
     // add new magicLink generation form in row, managed by Map<Integer, MagicLinkToolViewModel> _magicLinkViewMap
     private void addAnotherTicket(MagicLinkDataModel magicLinkData){
-        
+        boolean enabled=true;
         BigInteger tokenID = BigInteger.valueOf(0);
         if(magicLinkData!=null&&magicLinkData.tickets.length>0){
             tokenID=magicLinkData.tickets[0];
+            enabled=magicLinkData.enabled;
         }
         String currentTimezone = getCurrentTimezone();
 
@@ -401,7 +402,7 @@ public class MagicLinkTool extends JFrame{
             ComboBoxDataModel.ComboBoxOption[] options=comboBoxDataModel.getComboBoxOptions();
             JComboBox comboBox = new JComboBox(options);
             comboBox.setName(comboBoxDataModel.getId());
-            comboBox.setEnabled(true);
+            comboBox.setEnabled(enabled);
             tabPane_container_centerPane.add(comboBox,colConstraints);
             BigInteger valWithMask = tokenID.and(comboBoxDataModel.bitmask);
             if(valWithMask.equals(BigInteger.valueOf(0))==false){
@@ -432,7 +433,9 @@ public class MagicLinkTool extends JFrame{
                 JPanel dateTimePickerPane = new JPanel();
                 JButton dateTimePickerTime = new DateTimePicker(textFieldHiddenValue);
                 dateTimePickerTime.setName(model.id);
+                dateTimePickerTime.setEnabled(enabled);
                 JComboBox timeZoneTime = createDatePicker(dateTimePickerPane, dateTimePickerTime);
+                timeZoneTime.setEnabled(enabled);
                 tabPane_container_centerPane.add(dateTimePickerPane, colConstraints);
                 if(valWithoutMask.equals(BigInteger.valueOf(0))==false){
                     currentTimezone = MagicLinkDataModel.getTimezoneStrByValue(valWithoutMask);
@@ -463,8 +466,8 @@ public class MagicLinkTool extends JFrame{
             }else {
                 JTextField textFieldInput = new JTextField();
                 textFieldInput.setName(model.id);
-                textFieldInput.setEditable(true);
-                textFieldInput.setEnabled(true);
+                textFieldInput.setEditable(enabled);
+                textFieldInput.setEnabled(enabled);
                 textFieldInput.setColumns(10);
                 textFieldInput.addKeyListener(new KeyAdapter() {
                     public void keyReleased(KeyEvent e) {
@@ -507,7 +510,9 @@ public class MagicLinkTool extends JFrame{
         JTextField textFieldHiddenValue = new JTextField();
         textFieldHiddenValue.setVisible(false);
         JButton dateTimePickerExpireTime = new DateTimePicker(textFieldHiddenValue);
+        dateTimePickerExpireTime.setEnabled(enabled);
         JComboBox timeZoneExpireTime =createDatePicker(dateTimePickerPane, dateTimePickerExpireTime);
+        timeZoneExpireTime.setEnabled(enabled);
         tokenStatusPane.add(dateTimePickerPane);
         magicLinkViewModel.setDateTimePickerExpire(dateTimePickerExpireTime,timeZoneExpireTime);
         if(magicLinkData!=null&&magicLinkData.expiry!=0){
@@ -533,11 +538,11 @@ public class MagicLinkTool extends JFrame{
                 generateMagicLink(Integer.valueOf(textFieldRowNum.getName()));
             }
         });
-        tokenStatusPane.add(new JLabel("ask"));
-        JTextField textFieldOwner=new JTextField();
-        textFieldOwner.setColumns(8);
-        tokenStatusPane.add(textFieldOwner);
-        magicLinkViewModel.TextFieldOwner=textFieldOwner;
+//        tokenStatusPane.add(new JLabel("ask"));
+//        JTextField textFieldOwner=new JTextField();
+//        textFieldOwner.setColumns(8);
+//        tokenStatusPane.add(textFieldOwner);
+//        magicLinkViewModel.TextFieldOwner=textFieldOwner;
 
         tokenStatusPane.add(new JLabel("redeem by"));
         JTextField textFieldMagicLink=new JTextField();
@@ -884,6 +889,7 @@ public class MagicLinkTool extends JFrame{
                         model.magicLink = csvRecord.get(0);
                         model.remark = csvRecord.get(1);
                         model.redeemped = checkStatus(model.tickets[0]);
+                        model.enabled = !model.redeemped;
                         magicLinkDataModelList.add(model);
                     }
                 }

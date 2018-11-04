@@ -50,16 +50,8 @@ public class MeetupContractHelper {
             BigInteger biV = new BigInteger(_v);
 
             TransactionReceipt transactionReceipt =  contract.spawnPassTo(expiry,tickets,biV,r,s,recipient).send();
-            boolean test4 = contract.spawned(tickets.get(0)).send();
-            BigInteger test5 = contract.getSpawnedTicketsByIndex(BigInteger.valueOf(0)).send();
-            TransactionReceipt test6 =  contract.test2(expiry,tickets,biV,r,s,recipient).send();
-            String test1 =  contract.getTheContractAddress().send();
-            String test2 =  contract.test(expiry,tickets,biV,r,s,recipient).send();
-
-            byte[] test3 = contract.testbyte(BigInteger.valueOf(0),expiry,tickets).send();
-
-
-            //contract.getPassToEvents()
+            boolean spawned = contract.spawned(tickets.get(0)).send();
+            String getTheContractAddress =  contract.getTheContractAddress().send();
         } catch (Exception e) {
             e.printStackTrace();
         }

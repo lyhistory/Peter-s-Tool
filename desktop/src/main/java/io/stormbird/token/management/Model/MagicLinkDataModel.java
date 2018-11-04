@@ -22,6 +22,7 @@ public class MagicLinkDataModel {
     public int contractType;
 
     public String remark;
+    public boolean enabled;
     public boolean redeemped;
 
     public static String getDateStrByValue(BigInteger val,String timezone){
