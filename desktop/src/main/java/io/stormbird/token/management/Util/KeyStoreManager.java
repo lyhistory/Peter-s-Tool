@@ -17,7 +17,6 @@ import java.security.cert.CertificateException;
 import java.util.Base64;
 //import java.security.KeyStore;
 
-
 public class KeyStoreManager {
     public String privateKeyFilePath = "./desktop/res/keystore.ks";
     private KeyStore keyStore;

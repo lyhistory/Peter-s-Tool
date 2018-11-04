@@ -4,6 +4,7 @@ import io.stormbird.token.entity.EthereumReadBuffer;
 import io.stormbird.token.management.CustomComponents.DateTimePicker;
 import io.stormbird.token.management.Model.*;
 import io.stormbird.token.management.Util.KeyStoreManager;
+import io.stormbird.token.management.Util.MeetupContractHelper;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
@@ -14,6 +15,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.web3j.crypto.Credentials;
+import org.web3j.crypto.Sign;
 import org.web3j.utils.Convert;
 import org.xml.sax.SAXException;
 
@@ -76,11 +78,13 @@ public class MagicLinkTool extends JFrame{
     private TokenViewModel _tokenViewModel;
     private Map<Integer, MagicLinkToolViewModel> _magicLinkViewMap;
     private static ArrayList<MagicLinkDataModel> _magicLinkDataModelArrayList;
+    MeetupContractHelper contractHelper;
     public MagicLinkTool(){
         try {
+            _tokenViewModel = new TokenViewModel(new FileInputStream(ticketXMLFilePath), Locale.getDefault());
+            contractHelper=new MeetupContractHelper(_tokenViewModel.comboBoxContractAddressList.get(0).getKey());
             _magicLinkViewMap = new ConcurrentHashMap<>();
             _magicLinkDataModelArrayList = loadMagicLinksFromCSV();
-
 
             this.setJMenuBar(createMenuBar());
             this.initUpperPane();    //Private key Dropdownlist
@@ -110,6 +114,10 @@ public class MagicLinkTool extends JFrame{
         } catch (IllegalArgumentException e){
             e.printStackTrace();
             //log exception
+        }catch (IOException e) {
+            e.printStackTrace();
+        } catch (SAXException e) {
+            e.printStackTrace();
         }
     }
 
@@ -281,13 +289,7 @@ public class MagicLinkTool extends JFrame{
         tabPane_container.add(tabPane_wizard);
     }
     private void initTabPaneContainer(){
-        try {
-            _tokenViewModel = new TokenViewModel(new FileInputStream(ticketXMLFilePath), Locale.getDefault());
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (SAXException e) {
-            e.printStackTrace();
-        }
+
         //TopPane: contract address
         JPanel northPane = new JPanel();
         northPane.add(new JLabel("Contract:"));
@@ -297,6 +299,8 @@ public class MagicLinkTool extends JFrame{
             comboBoxContractAddress.setEnabled(true);
         }
         northPane.add(comboBoxContractAddress);
+
+
 
         //CenterPane: main container for magic link
         GridBagConstraints col1Constraints = new GridBagConstraints();
@@ -379,6 +383,7 @@ public class MagicLinkTool extends JFrame{
 
     // add new magicLink generation form in row, managed by Map<Integer, MagicLinkToolViewModel> _magicLinkViewMap
     private void addAnotherTicket(MagicLinkDataModel magicLinkData){
+        
         BigInteger tokenID = BigInteger.valueOf(0);
         if(magicLinkData!=null&&magicLinkData.tickets.length>0){
             tokenID=magicLinkData.tickets[0];
@@ -689,7 +694,7 @@ public class MagicLinkTool extends JFrame{
             ByteArrayInputStream bas = new ByteArrayInputStream(bytes);
             EthereumReadBuffer ds = new EthereumReadBuffer(bas);
 
-            data.contractType = ds.readByte();
+            //data.contractType = ds.readByte();
             szabo = ds.readBI().intValue();;//ds.toUnsignedLong(ds.readInt());
             data.expiry = ds.readBI().longValue();
             data.priceWei = Convert.toWei(BigDecimal.valueOf(szabo), Convert.Unit.SZABO).toBigInteger();
@@ -878,6 +883,7 @@ public class MagicLinkTool extends JFrame{
                     if (model != null) {
                         model.magicLink = csvRecord.get(0);
                         model.remark = csvRecord.get(1);
+                        model.redeemped = checkStatus(model.tickets[0]);
                         magicLinkDataModelList.add(model);
                     }
                 }
@@ -887,6 +893,13 @@ public class MagicLinkTool extends JFrame{
             return null;
         }
         return magicLinkDataModelList;
+    }
+    private boolean checkStatus(BigInteger tokenID){
+        MeetupContractHelper.RedeemStatus status=contractHelper.checkSpawnableTokenRedeemStatus(tokenID);
+        if(status==MeetupContractHelper.RedeemStatus.Redeemed){
+            return true;
+        }
+        return false;
     }
     private  void savePrivateKey(){
         if(comboBoxKeysList.getItemCount()>0) {

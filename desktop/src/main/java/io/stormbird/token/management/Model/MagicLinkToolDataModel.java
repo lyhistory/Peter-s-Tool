@@ -78,8 +78,8 @@ public class MagicLinkToolDataModel {
         //0x02: Spawn token magic link.
         //0x03: Customisable spawn token link.
         int byteLength=0;
-        byte[] leadingbytes = hexStringToBytes("02");
-        byteLength=1;//leading lenght
+        //byte[] leadingbytes = hexStringToBytes("02");
+        //byteLength=1;//leading lenght
         byte[] priceInMicroWei = priceInSzabo.toByteArray();
         byteLength+=32;//priceinwei
         byte[] expiry = expiryTimestamp.toByteArray();
@@ -87,7 +87,7 @@ public class MagicLinkToolDataModel {
         byteLength+=20;//contract address
         byteLength+=tickets.length*32;//tickets
         ByteBuffer message = ByteBuffer.allocate(byteLength);
-        message.put(leadingbytes);
+        //message.put(leadingbytes);
         byte[] leadingZeros = new byte[32 - priceInMicroWei.length];
         message.put(leadingZeros);
         message.put(priceInMicroWei);
