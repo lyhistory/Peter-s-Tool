@@ -5,13 +5,14 @@ import org.web3j.crypto.Keys;
 import org.web3j.crypto.Sign;
 
 import java.math.BigInteger;
-import java.security.SignatureException;
+import java.util.Map;
 
+import io.stormbird.token.tools.Numeric;
 import io.stormbird.token.tools.ParseMagicLink;
-import io.stormbird.wallet.R;
+import io.stormbird.wallet.service.TokensService;
 
-import static io.stormbird.wallet.interact.SetupTokensInteract.CONTRACT_CONSTRUCTOR;
-import static io.stormbird.wallet.interact.SetupTokensInteract.RECEIVE_FROM_MAGICLINK;
+import static io.stormbird.wallet.C.BURN_ADDRESS;
+import static io.stormbird.wallet.entity.TransactionDecoder.buildMethodId;
 
 /**
  * Created by James on 26/03/2018.
@@ -19,11 +20,12 @@ import static io.stormbird.wallet.interact.SetupTokensInteract.RECEIVE_FROM_MAGI
 
 public class EtherscanTransaction
 {
+    private static final String TENZID_REGISTER = "newSubdomain(string,string,string,address,address)";
     //[{"blockNumber":"1671277","timeStamp":"1505373215","hash":"0x1b1717b6d32387041f7053a5ce3426e3c030ba557fcc458c3829abc8ad0601a9","nonce":"5","blockHash":"0x4389a76b07d5b6b82737aebb182b81758adb839431cf49669bf0c234201cdced","transactionIndex":"3",
     // "from":"0xfde7b48f097102e736b45296d1ac6cb8a51426eb","to":"0x007bee82bdd9e866b2bd114780a47f2261c684e3","value":"500000000000000000",
     // "gas":"31501","gasPrice":"4000000000","isError":"0","txreceipt_status":"","input":"0x","contractAddress":"",
     // "cumulativeGasUsed":"184451","gasUsed":"21000","confirmations":"1236861"},
-    String blockNumber;
+    public String blockNumber;
     long timeStamp;
     String hash;
     int nonce;
@@ -43,12 +45,14 @@ public class EtherscanTransaction
     int confirmations;
 
     private static TransactionDecoder decoder = null;
+    private static TransactionDecoder ensDecoder = null;
     private static ParseMagicLink parser = null;
 
-    public Transaction createTransaction()
+    public Transaction createTransaction(String walletAddress)
     {
         boolean isConstructor = false;
         TransactionOperation[] o;
+        TransactionInput f = null;
 
         if (contractAddress.length() > 0)
         {
@@ -58,8 +62,21 @@ public class EtherscanTransaction
             TransactionContract ct = o[0].contract;
             ct.setOperation(TransactionType.CONSTRUCTOR);// R.string.ticket_contract_constructor);
             ct.address = contractAddress;
-            ct.setType(-5);// indicate that we need to load the contract
+            ct.setType(-3);// indicate that we need to load the contract
             isConstructor = true;
+            //TODO: We can detect ERC20, ERC875 and other Token contracts here
+            if (detectUint16Contract(input))
+            {
+                ct.decimals = 16;
+            }
+            else
+            {
+                ct.decimals = 256;
+            }
+
+            TokensService.setInterfaceSpec(contractAddress, ct.decimals);
+
+            input = "Constructor"; //Placeholder - don't consume storage for the constructor
         }
         else
         {
@@ -68,12 +85,12 @@ public class EtherscanTransaction
 
             if (input != null && input.length() >= 10)
             {
-                TransactionOperation op;
-                TransactionContract ct;
+                TransactionOperation op = null;
+                TransactionContract ct = null;
 
                 if (decoder == null) decoder = new TransactionDecoder();
                 if (parser == null) parser = new ParseMagicLink();
-                TransactionInput f = decoder.decodeInput(input);
+                f = decoder.decodeInput(input);
                 //is this a trade?
                 if (f.functionData != null)
                 {
@@ -83,46 +100,79 @@ public class EtherscanTransaction
                     switch (f.functionData.functionFullName)
                     {
                         case "trade(uint256,uint16[],uint8,bytes32,bytes32)":
+                        case "trade(uint256,uint256[],uint8,bytes32,bytes32)":
                             o = processTrade(f);
+                            op = o[0];
                             setName(o, TransactionType.MAGICLINK_TRANSFER);
+                            op.contract.address = to;
                             break;
                         case "transferFrom(address,address,uint16[])":
+                        case "transferFrom(address,address,uint256[])":
                             o = generateERC875Op();
-                            o[0].contract.setIndicies(f.paramValues);
-                            setName(o, TransactionType.TRANSFER_TO);
+                            op = o[0];
+                            op.contract.setIndicies(f.paramValues);
+                            if (f.containsAddress(BURN_ADDRESS))
+                            {
+                                setName(o, TransactionType.REDEEM);
+                            }
+                            else
+                            {
+                                setName(o, TransactionType.TRANSFER_FROM);
+                            }
+                            op.contract.setType(-1);
+                            op.contract.address = to;
+                            op.contract.setOtherParty(f.getFirstAddress());
+                            op.to = f.getAddress(1);
                             break;
                         case "transfer(address,uint16[])":
+                        case "transfer(address,uint256[])":
                             o = generateERC875Op();
-                            o[0].contract.setOtherParty(from);
-                            o[0].contract.setIndicies(f.paramValues);
+                            op = o[0];
+                            op.contract.setOtherParty(f.getFirstAddress());
+                            op.contract.setIndicies(f.paramValues);
                             setName(o, TransactionType.TRANSFER_TO);
+                            op.contract.address = to;
                             break;
                         case "transfer(address,uint256)":
                             o = generateERC20Op();
                             op = o[0];
                             op.from = from;
                             op.to = f.getFirstAddress();
-                            op.transactionId = hash;
                             op.value = String.valueOf(f.getFirstValue());
+                            op.contract.address = to;
                             setName(o, TransactionType.TRANSFER_TO);
                             break;
+                        case "transferFrom(address,address,uint256)":
+                            o = generateERC20Op();
+                            op = o[0];
+                            op.from = f.getFirstAddress();
+                            op.to = f.getAddress(1);
+                            op.value = String.valueOf(f.getFirstValue());
+                            op.contract.address = to;
+                            setName(o, TransactionType.TRANSFER_FROM);
+                            op.contract.setType(1);
+                            break;
                         case "loadNewTickets(bytes32[])":
+                        case "loadNewTickets(uint256[])":
                             o = generateERC875Op();
                             op = o[0];
                             op.from = from;
-                            op.transactionId = hash;
                             op.value = String.valueOf(f.paramValues.size());
+                            op.contract.address = to;
                             setName(o, TransactionType.LOAD_NEW_TOKENS);
+                            op.contract.setType(1);
                             break;
                         case "passTo(uint256,uint16[],uint8,bytes32,bytes32,address)":
+                        case "passTo(uint256,uint256[],uint8,bytes32,bytes32,address)":
                             o = processPassTo(f);
                             op = o[0];
                             op.from = from;
                             op.to = f.getFirstAddress();
-                            op.transactionId = hash;
                             //value in what?
                             op.value = String.valueOf(f.getFirstValue());
+                            op.contract.address = to;
                             setName(o, TransactionType.PASS_TO);
+                            op.contract.setType(-1);
                             break;
                         case "endContract()":
                             o = generateERC875Op();
@@ -132,9 +182,15 @@ public class EtherscanTransaction
                             ct.name = to;
                             ct.setType(-2);
                             setName(o, TransactionType.TERMINATE_CONTRACT);
+                            ct.address = to;
                             break;
                         default:
                             break;
+                    }
+
+                    if (op != null)
+                    {
+                        op.transactionId = hash;
                     }
                 }
             }
@@ -143,7 +199,18 @@ public class EtherscanTransaction
         Transaction tx = new Transaction(hash, isError, blockNumber, timeStamp, nonce, from, to, value, gas, gasPrice, input,
             gasUsed, o);
 
+        if (o.length > 0)
+        {
+            TransactionOperation op = o[0];
+            if (op.contract != null) op.contract.completeSetup(walletAddress, tx);
+        }
+
         tx.isConstructor = isConstructor;
+
+        if (walletAddress != null && !walletInvolvedInTransaction(tx, f, walletAddress))
+        {
+            tx = null; //this transaction is not relevant to the wallet we're scanning for
+        }
 
         return tx;
     }
@@ -224,5 +291,64 @@ public class EtherscanTransaction
                 ((ERC875ContractTransaction) ct).operation = name;
             }
         }
+    }
+
+    private boolean walletInvolvedInTransaction(Transaction trans, TransactionInput data, String walletAddr)
+    {
+        boolean involved = false;
+        if (data == null || data.functionData == null)
+        {
+            return (trans.from.equalsIgnoreCase(walletAddr) || trans.to.equalsIgnoreCase(walletAddr)); //early return
+        }
+        if (data.containsAddress(walletAddr)) return true;
+        if (trans.from.equalsIgnoreCase(walletAddr)) return true;
+        if (trans.to.equalsIgnoreCase(walletAddr)) return true;
+        if (trans.operations != null && trans.operations.length > 0 && trans.operations[0].walletInvolvedWithTransaction(walletAddr))
+            involved = true;
+        return involved;
+    }
+
+    private boolean detectUint16Contract(String input)
+    {
+        String transferFromSig = Numeric.cleanHexPrefix(buildMethodId("transfer(address,uint16[])"));
+        if (input.length() < 10) return false;
+
+        int index = input.indexOf(transferFromSig);
+        return index > 0;
+    }
+
+    public static void prepParser()
+    {
+        if (ensDecoder == null) ensDecoder = new TransactionDecoder();
+        ensDecoder.addScanFunction(TENZID_REGISTER, false);
+    }
+
+    public Wallet scanForENS(Map<String, Wallet> walletMap)
+    {
+        Wallet foundWallet = null;
+        //breakdown this transaction and see if it has any of the wallets we're using
+        TransactionInput data = ensDecoder.decodeInput(input);
+
+        switch (data.functionData.functionFullName)
+        {
+            case TENZID_REGISTER:
+                String address = data.getFirstAddress();
+                //only accept the ID if:
+                // - the transaction completed successfully
+                // - the transaction originated from the same address that is being designated
+                //This is to stop any attempt at ENS spoofing
+                if (address != null && isError.equals("0") && address.equals(from)
+                        && walletMap.containsKey(address))
+                {
+                    foundWallet = walletMap.get(address);
+                    foundWallet.ENSname = data.miscData.get(0) + "." + data.miscData.get(1) + "." + data.miscData.get(2);
+                }
+                break;
+            default:
+                break;
+        }
+
+
+        return foundWallet;
     }
 }

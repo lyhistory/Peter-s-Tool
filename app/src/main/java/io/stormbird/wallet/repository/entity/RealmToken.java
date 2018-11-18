@@ -17,6 +17,8 @@ public class RealmToken extends RealmObject {
     private boolean isStormbird;
     private String burnList;
     private int nullCheckCount = 0;
+    private int interfaceSpec;
+    private String auxData;
 
     public int getDecimals() {
         return decimals;
@@ -119,5 +121,25 @@ public class RealmToken extends RealmObject {
     public int getNullCheckCount()
     {
         return nullCheckCount;
+    }
+
+    public int getInterfaceSpec()
+    {
+        return interfaceSpec;
+    }
+
+    public void setInterfaceSpec(int interfaceSpec)
+    {
+        this.interfaceSpec = interfaceSpec;
+    }
+
+    public String getAuxData()
+    {
+        return auxData;
+    }
+
+    public void setAuxData(String auxData)
+    {
+        this.auxData = auxData;
     }
 }

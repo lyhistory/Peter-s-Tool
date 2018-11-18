@@ -2,6 +2,9 @@ package io.stormbird.wallet.service;
 
 
 import android.content.Context;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Environment;
 import android.text.format.DateUtils;
 
@@ -60,16 +63,16 @@ public class AssetDefinitionService
     private static final String XML_EXT = "xml";
     private final Context context;
     private final OkHttpClient okHttpClient;
-    private Map<String, TokenDefinition> assetDefinitions;
-    private Map<Integer, List<String>> networkMappings;
-    private Map<String, Long> assetChecked;
+    private Map<String, TokenDefinition> assetDefinitions; //Mapping of contract address to token definitions
+    private Map<String, Long> assetChecked;                //Mapping of contract address to when they were last fetched from server
+    private List<String> devOverrideContracts;             //List of contract addresses which have been overridden by definition in developer folder
 
     public AssetDefinitionService(OkHttpClient client, Context ctx)
     {
         context = ctx;
         okHttpClient = client;
-        networkMappings = new HashMap<>();
         assetChecked = new HashMap<>();
+        devOverrideContracts = new ArrayList<>();
 
         loadLocalContracts();
     }
@@ -81,7 +84,7 @@ public class AssetDefinitionService
         try
         {
             assetDefinitions.clear();
-            loadContracts(context.getFilesDir());
+            loadContracts(context.getFilesDir(), false);
             checkDownloadedFiles();
         }
         catch (IOException|SAXException e)
@@ -176,7 +179,17 @@ public class AssetDefinitionService
      */
     public List<String> getAllContracts(int networkId)
     {
-        List<String> contractList = networkMappings.get(networkId);
+        List<String> contractList = new ArrayList<>();
+        for (TokenDefinition td : assetDefinitions.values())
+        {
+            for (String address : td.addresses.keySet())
+            {
+                if (td.addresses.get(address) == networkId && !contractList.contains(address))
+                {
+                    contractList.add(address);
+                }
+            }
+        }
         return contractList;
     }
 
@@ -262,13 +275,26 @@ public class AssetDefinitionService
             //now map all contained addresses
             for (String contractAddress : definition.addresses.keySet())
             {
-                Integer networkId = definition.addresses.get(contractAddress);
                 contractAddress = contractAddress.toLowerCase();
                 assetDefinitions.put(contractAddress, definition);
-                List<String> addresses = networkMappings.get(networkId);
-                if (addresses == null) addresses = new ArrayList<>();
-                if (!addresses.contains(contractAddress)) addresses.add(contractAddress);
-                networkMappings.put(networkId, addresses);
+            }
+        }
+    }
+
+    /**
+     * Add the contract addresses defined in the developer XML file to the override list.
+     * Subsequent refresh of XML from server will not override these definitions.
+     * @param definition interpreted definition
+     */
+    private void addOverrideFile(TokenDefinition definition)
+    {
+        if (definition != null)
+        {
+            //now map all contained addresses
+            for (String contractAddress : definition.addresses.keySet())
+            {
+                contractAddress = contractAddress.toLowerCase();
+                if (!devOverrideContracts.contains(contractAddress)) devOverrideContracts.add(contractAddress);
             }
         }
     }
@@ -309,6 +335,13 @@ public class AssetDefinitionService
             sb.append(address);
             String result = null;
 
+            //prepare Android headers
+            PackageManager manager = context.getPackageManager();
+            PackageInfo info = manager.getPackageInfo(
+                    context.getPackageName(), 0);
+            String appVersion = info.versionName;
+            String OSVersion = String.valueOf(Build.VERSION.RELEASE) ;
+
             okhttp3.Response response = null;
 
             try
@@ -316,6 +349,11 @@ public class AssetDefinitionService
                 Request request = new Request.Builder()
                         .url(sb.toString())
                         .get()
+                        .addHeader("Accept", "text/xml; charset=UTF-8")
+                        .addHeader("X-Client-Name", "AlphaWallet")
+                        .addHeader("X-Client-Version", appVersion)
+                        .addHeader("X-Platform-Name", "Android")
+                        .addHeader("X-Platform-Version", OSVersion)
                         .addHeader("If-Modified-Since", dateFormat)
                         .build();
 
@@ -375,7 +413,7 @@ public class AssetDefinitionService
 
         try
         {
-            loadContracts(directory);
+            loadContracts(directory, true);
         }
         catch (IOException|SAXException e)
         {
@@ -383,25 +421,28 @@ public class AssetDefinitionService
         }
     }
 
-    private void loadContracts(File directory) throws IOException, SAXException
+    private void loadContracts(File directory, boolean external) throws IOException, SAXException
     {
         File[] files = directory.listFiles();
         if (files != null)
         {
             for (File f : files)
             {
-                String extension = f.getName().substring(f.getName().lastIndexOf('.') + 1).toLowerCase();
-                if (extension.equals("xml"))
+                if (f.getName().contains(".xml"))
                 {
-                    String name = f.getName().substring(0, f.getName().lastIndexOf('.')).toLowerCase();
-                    try
+                    String extension = f.getName().substring(f.getName().lastIndexOf('.') + 1).toLowerCase();
+                    if (extension.equals("xml"))
                     {
-                        FileInputStream stream = new FileInputStream(f);
-                        parseFile(stream);
-                    }
-                    catch (SAXParseException e)
-                    {
-                        e.printStackTrace();
+                        try
+                        {
+                            FileInputStream stream = new FileInputStream(f);
+                            TokenDefinition td = parseFile(stream);
+                            if (external) addOverrideFile(td);
+                        }
+                        catch (SAXParseException e)
+                        {
+                            e.printStackTrace();
+                        }
                     }
                 }
             }
@@ -462,17 +503,22 @@ public class AssetDefinitionService
 
     /**
      * check the downloaded XML files for updates when wallet restarts.
-     * TODO: API to query update date
      */
     private void checkDownloadedFiles()
     {
         Disposable d = Observable.fromIterable(getFileList(context.getFilesDir()))
                 .filter(this::isValidXML)
                 .map(this::convertToAddress)
+                .filter(this::notOverriden)
                 .flatMap(this::fetchXMLFromServer)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(this::handleFile, this::onError);
+    }
+
+    private boolean notOverriden(String address)
+    {
+        return !devOverrideContracts.contains(address);
     }
 
     /**

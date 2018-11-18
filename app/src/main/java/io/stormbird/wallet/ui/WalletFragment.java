@@ -106,6 +106,8 @@ public class WalletFragment extends Fragment implements View.OnClickListener, To
         list.setLayoutManager(new LinearLayoutManager(getContext()));
         list.setAdapter(adapter);
 
+        viewModel.removeTokens().observe(this, adapter::onRemoveTokens);
+
         refreshLayout.setOnRefreshListener(this::refreshList);
 
         tokenReceiver = new TokensReceiver(getActivity(), this);
@@ -227,6 +229,7 @@ public class WalletFragment extends Fragment implements View.OnClickListener, To
 
     private void onTokenClick(View view, Token token) {
         Context context = view.getContext();
+        token = viewModel.getTokenFromService(token);
         token.clickReact(viewModel, context);
     }
 
@@ -272,8 +275,6 @@ public class WalletFragment extends Fragment implements View.OnClickListener, To
     {
         this.wallet = wallet;
         viewModel.fetchTokens();
-        //get the XML address
-        viewModel.setContractAddresses();
     }
 
     private void onDefaultNetwork(NetworkInfo networkInfo)

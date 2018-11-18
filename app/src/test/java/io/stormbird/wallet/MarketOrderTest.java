@@ -5,7 +5,6 @@ import android.support.annotation.NonNull;
 import io.stormbird.wallet.entity.BaseViewCallback;
 import io.stormbird.wallet.entity.NetworkInfo;
 import io.stormbird.wallet.entity.Token;
-import io.stormbird.wallet.entity.TokenTransaction;
 import io.stormbird.wallet.entity.TradeInstance;
 import io.stormbird.wallet.entity.Transaction;
 import io.stormbird.wallet.entity.Wallet;
@@ -15,12 +14,8 @@ import io.stormbird.wallet.service.MarketQueueService;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.spongycastle.util.encoders.Base64;
 import org.web3j.crypto.ECKeyPair;
-import org.web3j.crypto.Keys;
 import org.web3j.crypto.Sign;
-import org.web3j.utils.Convert;
-import org.web3j.utils.Numeric;
 
 import java.math.BigInteger;
 import java.util.concurrent.TimeUnit;
@@ -28,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 
 import io.reactivex.Completable;
-import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.reactivex.Scheduler;
 import io.reactivex.Single;
@@ -114,23 +108,8 @@ public class MarketOrderTest
             }
 
             @Override
-            public Observable<Transaction[]> fetchTransaction(Wallet wallet) {
-                return null;
-            }
-
-            @Override
-            public Observable<Transaction[]> fetchNetworkTransaction(Wallet wallet, long lastBlock)
+            public Observable<Transaction[]> fetchNetworkTransaction(Wallet wallet, long lastBlock, String userAddress)
             {
-                return null;
-            }
-
-            @Override
-            public Observable<TokenTransaction[]> fetchTokenTransaction(Wallet wallet, Token token) {
-                return null;
-            }
-
-            @Override
-            public Maybe<Transaction> findTransaction(Wallet wallet, String transactionHash) {
                 return null;
             }
 
@@ -184,6 +163,12 @@ public class MarketOrderTest
 
             @Override
             public Single<Transaction[]> storeTransactions(NetworkInfo networkInfo, Wallet wallet, Transaction[] txList)
+            {
+                return null;
+            }
+
+            @Override
+            public Single<Integer> queryInterfaceSpec(Token token)
             {
                 return null;
             }

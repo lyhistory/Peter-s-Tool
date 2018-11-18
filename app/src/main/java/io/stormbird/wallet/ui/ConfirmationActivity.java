@@ -23,6 +23,7 @@ import java.util.List;
 import javax.inject.Inject;
 
 import dagger.android.AndroidInjection;
+import io.stormbird.token.tools.Numeric;
 import io.stormbird.wallet.C;
 import io.stormbird.wallet.R;
 import io.stormbird.wallet.entity.ConfirmationType;
@@ -68,6 +69,7 @@ public class ConfirmationActivity extends BaseActivity {
     private TextView websiteText;
     private Button sendButton;
     private TextView title;
+    private TextView labelAmount;
 
     private BigDecimal amount;
     private int decimals;
@@ -105,6 +107,7 @@ public class ConfirmationActivity extends BaseActivity {
         websiteLabel = findViewById(R.id.label_website);
         websiteText = findViewById(R.id.text_website);
         title = findViewById(R.id.title_confirm);
+        labelAmount = findViewById(R.id.label_amount);
         sendButton.setOnClickListener(view -> onSend());
 
         transaction = getIntent().getParcelableExtra(C.EXTRA_WEB3TRANSACTION);
@@ -168,6 +171,17 @@ public class ConfirmationActivity extends BaseActivity {
                 BigDecimal ethAmount = Convert.fromWei(transaction.value.toString(10), Convert.Unit.ETHER);
                 amountString = getEthString(ethAmount.doubleValue()) + " " + ETH_SYMBOL;
                 //handle web3 transaction signing
+                break;
+            case ERC721:
+                String contractName = getIntent().getStringExtra(C.EXTRA_CONTRACT_NAME);
+                title.setText(R.string.confirm_erc721_transfer);
+                contractAddrText.setVisibility(View.VISIBLE);
+                contractAddrLabel.setVisibility(View.VISIBLE);
+                String contractTxt = contractAddress + " " + contractName;
+                labelAmount.setText(R.string.asset_name);
+                contractAddrText.setText(contractTxt);
+                amountString = symbol;
+                tokenTransfer = true;
                 break;
             default:
                 amountString = "-" + BalanceUtils.subunitToBase(amount.toBigInteger(), decimals).toPlainString() + " " + symbol;
@@ -272,10 +286,23 @@ public class ConfirmationActivity extends BaseActivity {
                         gasSettings.gasLimit);
                 break;
 
+            case WEB3TRANSACTION:
+                viewModel.signWeb3DAppTransaction(transaction, gasSettings.gasPrice, gasSettings.gasLimit);
+                break;
+
             case MARKET:
                 //price in eth
                 BigInteger wei = Convert.toWei("2470", Convert.Unit.FINNEY).toBigInteger();
                 viewModel.generateSalesOrders(amountStr, contractAddress, wei, valueText.getText().toString());
+                break;
+
+            case ERC721:
+                viewModel.createERC721Transfer(
+                        toAddressText.getText().toString(),
+                        contractAddress,
+                        amountStr,
+                        gasSettings.gasPrice,
+                        gasSettings.gasLimit);
                 break;
 
             default:
@@ -333,13 +360,13 @@ public class ConfirmationActivity extends BaseActivity {
 
     private void onError(ErrorEnvelope error) {
         hideDialog();
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle(R.string.error_transaction_failed)
-                .setMessage(error.message)
-                .setPositiveButton(R.string.button_ok, (dialog1, id) -> {
-                    // Do nothing
-                })
-                .create();
+        dialog = new AWalletAlertDialog(this);
+        dialog.setTitle(R.string.error_transaction_failed);
+        dialog.setMessage(error.message);
+        dialog.setButtonText(R.string.button_ok);
+        dialog.setButtonListener(v -> {
+            dialog.dismiss();
+        });
         dialog.show();
     }
 

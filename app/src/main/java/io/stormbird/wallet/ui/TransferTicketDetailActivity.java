@@ -9,6 +9,7 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.AppCompatRadioButton;
 import android.support.v7.widget.LinearLayoutManager;
@@ -34,14 +35,15 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
-import java.util.Set;
 
 import javax.inject.Inject;
 
 import dagger.android.AndroidInjection;
 import io.stormbird.wallet.R;
+import io.stormbird.wallet.entity.ERC721Token;
 import io.stormbird.wallet.entity.ErrorEnvelope;
 import io.stormbird.wallet.entity.Ticket;
+import io.stormbird.wallet.entity.Token;
 import io.stormbird.wallet.entity.Wallet;
 import io.stormbird.wallet.router.HomeRouter;
 import io.stormbird.wallet.ui.widget.adapter.TicketAdapter;
@@ -63,19 +65,20 @@ import static io.stormbird.wallet.C.EXTRA_TOKENID_LIST;
 import static io.stormbird.wallet.C.Key.TICKET;
 import static io.stormbird.wallet.C.Key.WALLET;
 import static io.stormbird.wallet.C.PRUNE_ACTIVITY;
+import static io.stormbird.wallet.ui.SendActivity.ENS_RESOLVE_DELAY;
 
 /**
  * Created by James on 21/02/2018.
  */
 
-public class TransferTicketDetailActivity extends BaseActivity
+public class TransferTicketDetailActivity extends BaseActivity implements Runnable
 {
     private static final int BARCODE_READER_REQUEST_CODE = 1;
     private static final int SEND_INTENT_REQUEST_CODE = 2;
     private static final int CHOOSE_QUANTITY = 0;
     private static final int PICK_TRANSFER_METHOD = 1;
     private static final int TRANSFER_USING_LINK = 2;
-    private static final int TRANSFER_TO_ADDRESS = 3;
+    public  static final int TRANSFER_TO_ADDRESS = 3;
 
     @Inject
     protected TransferTicketDetailViewModelFactory viewModelFactory;
@@ -86,7 +89,7 @@ public class TransferTicketDetailActivity extends BaseActivity
 
     private FinishReceiver finishReceiver;
 
-    private Ticket ticket;
+    private Token token;
     private TicketAdapter adapter;
 
     private TextView titleText;
@@ -95,10 +98,14 @@ public class TransferTicketDetailActivity extends BaseActivity
     private EditText toAddressEditText;
     private ImageButton qrImageView;
     private TextView textQuantity;
+    private LinearLayout layoutENSResolve;
+    private TextView textENS;
 
     private String ticketIds;
     private String prunedIds;
     private int transferStatus;
+
+    private Handler handler;
 
     private AWalletConfirmationDialog confirmationDialog;
 
@@ -124,7 +131,9 @@ public class TransferTicketDetailActivity extends BaseActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_transfer_detail);
 
-        ticket = getIntent().getParcelableExtra(TICKET);
+        token = getIntent().getParcelableExtra(TICKET);
+        handler = new Handler();
+
         Wallet wallet = getIntent().getParcelableExtra(WALLET);
         ticketIds = getIntent().getStringExtra(EXTRA_TOKENID_LIST);
         transferStatus = getIntent().getIntExtra(EXTRA_STATE, 0);
@@ -138,6 +147,8 @@ public class TransferTicketDetailActivity extends BaseActivity
         progressView.hide();
 
         toAddressEditText = findViewById(R.id.edit_to_address);
+        layoutENSResolve = findViewById(R.id.layout_ens);
+        textENS = findViewById(R.id.text_ens_resolve);
 
         viewModel = ViewModelProviders.of(this, viewModelFactory)
                 .get(TransferTicketDetailViewModel.class);
@@ -149,10 +160,12 @@ public class TransferTicketDetailActivity extends BaseActivity
         viewModel.error().observe(this, this::onError);
         viewModel.universalLinkReady().observe(this, this::linkReady);
         viewModel.userTransaction().observe(this, this::onUserTransaction);
+        viewModel.ensResolve().observe(this, this::onENSSuccess);
+        viewModel.ensFail().observe(this, this::hideENS);
 
         //we should import a token and a list of chosen ids
         RecyclerView list = findViewById(R.id.listTickets);
-        adapter = new TicketAdapter(this::onTicketIdClick, ticket, ticketIds, viewModel.getAssetDefinitionService(), null);
+        adapter = new TicketAdapter(this::onTicketIdClick, token, ticketIds, viewModel.getAssetDefinitionService(), null);
         list.setLayoutManager(new LinearLayoutManager(this));
         list.setAdapter(adapter);
 
@@ -215,7 +228,7 @@ public class TransferTicketDetailActivity extends BaseActivity
             int nextState = getNextState();
             if (nextState >= 0)
             {
-                viewModel.openTransferState(this, ticket, prunedIds, nextState);
+                viewModel.openTransferState(this, token, prunedIds, nextState);
             }
         });
 
@@ -244,13 +257,20 @@ public class TransferTicketDetailActivity extends BaseActivity
             @Override
             public void afterTextChanged(Editable s)
             {
-
+                textENS.setText("");
+                checkAddress();
             }
         });
 
         setupScreen();
 
         finishReceiver = new FinishReceiver(this);
+    }
+
+    private void checkAddress()
+    {
+        handler.removeCallbacks(this);
+        handler.postDelayed(this, ENS_RESOLVE_DELAY);
     }
 
     //TODO: This is repeated code also in SellDetailActivity. Probably should be abstracted out into generic view code routine
@@ -262,7 +282,7 @@ public class TransferTicketDetailActivity extends BaseActivity
             if ((quantity + 1) <= adapter.getTicketRangeCount()) {
                 quantity++;
                 textQuantity.setText(String.valueOf(quantity));
-                prunedIds = ticket.pruneIDList(ticketIds, quantity);
+                prunedIds = ((Ticket)token).pruneIDList(ticketIds, quantity);
             }
         });
 
@@ -272,12 +292,12 @@ public class TransferTicketDetailActivity extends BaseActivity
             if ((quantity - 1) >= 0) {
                 quantity--;
                 textQuantity.setText(String.valueOf(quantity));
-                prunedIds = ticket.pruneIDList(ticketIds, quantity);
+                prunedIds = ((Ticket)token).pruneIDList(ticketIds, quantity);
             }
         });
 
         textQuantity.setText("1");
-        prunedIds = ticket.pruneIDList(ticketIds, 1);
+        prunedIds = ((Ticket)token).pruneIDList(ticketIds, 1);
     }
 
     private void setupRadioButtons()
@@ -333,7 +353,7 @@ public class TransferTicketDetailActivity extends BaseActivity
                 break;
             case TRANSFER_USING_LINK:
                 //generate link
-                viewModel.generateUniversalLink(ticket.getTicketIndicies(ticketIds), ticket.getAddress(), calculateExpiryTime());
+                viewModel.generateUniversalLink(((Ticket)token).getTicketIndices(ticketIds), token.getAddress(), calculateExpiryTime());
                 break;
             case TRANSFER_TO_ADDRESS:
                 //transfer using eth
@@ -481,7 +501,8 @@ public class TransferTicketDetailActivity extends BaseActivity
 
         //check send address
         toAddressError.setVisibility(View.GONE);
-        final String to = toAddressEditText.getText().toString();
+        String to = toAddressEditText.getText().toString();
+        if (!isAddressValid(to)) to = textENS.getText().toString();
         if (!isAddressValid(to))
         {
             toAddressError.setVisibility(View.VISIBLE);
@@ -495,8 +516,8 @@ public class TransferTicketDetailActivity extends BaseActivity
         {
             viewModel.createTicketTransfer(
                     to,
-                    ticket.getAddress(),
-                    ticket.integerListToString(ticket.ticketIdStringToIndexList(prunedIds), true),
+                    token.getAddress(),
+                    token.integerListToString(token.ticketIdStringToIndexList(prunedIds), true),
                     Contract.GAS_PRICE,
                     Contract.GAS_LIMIT);
 
@@ -535,7 +556,7 @@ public class TransferTicketDetailActivity extends BaseActivity
     protected void onResume()
     {
         super.onResume();
-        viewModel.prepare(ticket);
+        viewModel.prepare(token);
         KeyboardUtils.hideKeyboard(toAddressEditText);
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
     }
@@ -607,7 +628,7 @@ public class TransferTicketDetailActivity extends BaseActivity
 
     private void linkReady(String universalLink)
     {
-        int quantity = ticket.ticketIdStringToIndexList(prunedIds).size();
+        int quantity = token.ticketIdStringToIndexList(prunedIds).size();
         int ticketName = (quantity > 1) ? R.string.tickets : R.string.ticket;
         String qty = String.valueOf(quantity) + " " +
                 getResources().getString(ticketName) + "\n" +
@@ -627,16 +648,29 @@ public class TransferTicketDetailActivity extends BaseActivity
 
     private void confirmTransfer()
     {
-        final String to = toAddressEditText.getText().toString();
+        String to = toAddressEditText.getText().toString();
         //check address
+        if (!isAddressValid(to)) to = textENS.getText().toString();
         if (!isAddressValid(to))
         {
             toAddressError.setVisibility(View.VISIBLE);
             return;
         }
 
+        if (token instanceof ERC721Token)
+        {
+            viewModel.openConfirm(getApplicationContext(), to, token, ticketIds);
+        }
+        else
+        {
+            handleERC875Transfer(to);
+        }
+    }
+
+    private void handleERC875Transfer(final String to)
+    {
         //how many tickets are we selling?
-        int quantity = ticket.stringHexToBigIntegerList(prunedIds).size();
+        int quantity = token.stringHexToBigIntegerList(prunedIds).size();
         int ticketName = (quantity > 1) ? R.string.tickets : R.string.ticket;
 
         String qty = String.valueOf(quantity) + " " +
@@ -708,6 +742,29 @@ public class TransferTicketDetailActivity extends BaseActivity
         String time = String.format(Locale.getDefault(), "%02d:%02d", Calendar.getInstance().get(Calendar.HOUR_OF_DAY),
                                     Calendar.getInstance().get(Calendar.MINUTE));
         expiryTimeEditText.setText(time);
+    }
+
+    @Override
+    public void run()
+    {
+        //address update delay check
+        final String to = toAddressEditText.getText().toString();
+        if (to.length() > 0 && to.charAt(0) == '@')
+        {
+            viewModel.checkENSAddress(to);
+        }
+    }
+
+    private void onENSSuccess(String address)
+    {
+        layoutENSResolve.setVisibility(View.VISIBLE);
+        textENS.setText(address);
+        KeyboardUtils.hideKeyboard(getCurrentFocus());
+    }
+
+    private void hideENS(Boolean dummy)
+    {
+        layoutENSResolve.setVisibility(View.GONE);
     }
 }
 

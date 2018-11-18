@@ -1,12 +1,12 @@
 package io.stormbird.wallet.ui.widget.adapter;
 
+import android.support.v7.util.SortedList;
 import android.view.ViewGroup;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.stormbird.token.entity.NonFungibleToken;
 import io.stormbird.token.entity.TicketRange;
 import io.stormbird.wallet.R;
 import io.stormbird.wallet.entity.ERC721Token;
@@ -18,11 +18,14 @@ import io.stormbird.wallet.service.OpenseaService;
 import io.stormbird.wallet.entity.opensea.Asset;
 import io.stormbird.wallet.ui.widget.OnTicketIdClickListener;
 import io.stormbird.wallet.ui.widget.entity.AssetSortedItem;
+import io.stormbird.wallet.ui.widget.entity.SortedItem;
+import io.stormbird.wallet.ui.widget.entity.TicketSaleSortedItem;
 import io.stormbird.wallet.ui.widget.entity.TokenBalanceSortedItem;
 import io.stormbird.wallet.ui.widget.entity.TokenIdSortedItem;
 import io.stormbird.wallet.ui.widget.holder.BinderViewHolder;
 import io.stormbird.wallet.ui.widget.holder.OpenseaHolder;
 import io.stormbird.wallet.ui.widget.holder.TicketHolder;
+import io.stormbird.wallet.ui.widget.holder.TicketSaleHolder;
 import io.stormbird.wallet.ui.widget.holder.TokenDescriptionHolder;
 import io.stormbird.wallet.ui.widget.holder.TotalBalanceHolder;
 
@@ -45,6 +48,7 @@ public class TicketAdapter extends TokensAdapter {
         token = t;
         openseaService = opensea;
         if (t instanceof Ticket) setToken(t);
+        if (t instanceof ERC721Token) setERC721Contract(t);
     }
 
     public TicketAdapter(OnTicketIdClickListener onTicketIdClick, Token token, String ticketIds, AssetDefinitionService service, OpenseaService opensea)
@@ -56,6 +60,7 @@ public class TicketAdapter extends TokensAdapter {
         //setTicket(ticket);
         if (token instanceof Ticket) setTokenRange(token, ticketIds);
         openseaService = opensea;
+        if (token instanceof ERC721Token) setERC721Contract(token);
     }
 
     @Override
@@ -110,57 +115,9 @@ public class TicketAdapter extends TokensAdapter {
         items.beginBatchedUpdates();
         items.clear();
 
-        /* as why there are 2 for loops immediately following: the
-         * sort that's required to get groupings. Splitting it in two
-         * makes the algorithm n*2 complexity (plus a log n for sort),
-         * rather than a n^2 complexity which you'd need to do it in
-         * one go. The code produced is simple enough for anyone
-         * looking at it in future. - James Brown
-         */
-
-        List<BigInteger> idList = ((Ticket)t).stringHexToBigIntegerList(ticketIds);
-        List<TicketRangeElement> sortedList = new ArrayList<>();
-        for (BigInteger v : idList)
-        {
-            if (v.compareTo(BigInteger.ZERO) == 0) continue;
-            TicketRangeElement e = new TicketRangeElement();
-            e.id = v;
-            NonFungibleToken nft = assetService.getNonFungibleToken(token.getAddress(), v);
-            if (nft != null)
-            {
-                e.ticketNumber = nft.getAttribute("numero").value.intValue();
-                e.category = (short) nft.getAttribute("category").value.intValue();
-                e.match = (short) nft.getAttribute("match").value.intValue();
-                e.venue = (short) nft.getAttribute("venue").value.intValue();
-            }
-            sortedList.add(e);
-        }
-        TicketRangeElement.sortElements(sortedList);
-
-        int currentCat = 0;
-        int currentNumber = -1;
-
-        for (int i = 0; i < sortedList.size(); i++)
-        {
-            TicketRangeElement e = sortedList.get(i);
-            if (currentRange != null && e.id.equals(currentRange.tokenIds.get(0)))
-            {
-                currentRange.tokenIds.add(e.id);
-            }
-            else if (currentRange == null || e.ticketNumber != currentNumber + 1 || e.category != currentCat) //check consecutive seats and zone is still the same, and push final ticket
-            {
-                currentRange = new TicketRange(e.id, t.getAddress());
-                items.add(new TokenIdSortedItem(currentRange, 10 + i));
-                currentCat = e.category;
-            }
-            else
-            {
-                //update
-                currentRange.tokenIds.add(e.id);
-            }
-            currentNumber = e.ticketNumber;
-        }
-
+        List<BigInteger> idList = t.stringHexToBigIntegerList(ticketIds);
+        List<TicketRangeElement> sortedList = generateSortedList(assetService, token, idList); //generate sorted list
+        addSortedItems(sortedList, t, TokenIdSortedItem.VIEW_TYPE); //insert sorted items into view
 
         items.endBatchedUpdates();
     }
@@ -174,33 +131,49 @@ public class TicketAdapter extends TokensAdapter {
         items.endBatchedUpdates();
     }
 
-    /* This one look similar to the one in TicketAdapter, it needs a
-     * bit more abstraction to merge - the types produced are
-     * different.*/
     private void addRanges(Token t)
     {
-        TicketRange currentRange = null;
-        int currentNumber = -1;
+        currentRange = null;
+        List<TicketRangeElement> sortedList = generateSortedList(assetService, t, ((Ticket)t).balanceArray);
+        addSortedItems(sortedList, t, TokenIdSortedItem.VIEW_TYPE);
+    }
 
-        //first sort the balance array
+
+    protected List<TicketRangeElement> generateSortedList(AssetDefinitionService assetService, Token token, List<BigInteger> idList)
+    {
         List<TicketRangeElement> sortedList = new ArrayList<>();
-        for (BigInteger v : ((Ticket)t).balanceArray)
+        for (BigInteger v : idList)
         {
             if (v.compareTo(BigInteger.ZERO) == 0) continue;
-            TicketRangeElement e = new TicketRangeElement();
+            TicketRangeElement e = new TicketRangeElement(assetService, token, v);
             e.id = v;
-            NonFungibleToken nft = assetService.getNonFungibleToken(token.getAddress(), v);
-            if (nft != null)
-            {
-                e.ticketNumber = nft.getAttribute("numero").value.intValue();
-                e.category = (short) nft.getAttribute("category").value.intValue();
-                e.match = (short) nft.getAttribute("match").value.intValue();
-                e.venue = (short) nft.getAttribute("venue").value.intValue();
-            }
             sortedList.add(e);
         }
         TicketRangeElement.sortElements(sortedList);
+        return sortedList;
+    }
 
+    @SuppressWarnings("unchecked")
+    protected <T> T generateType(TicketRange range, int weight, int id)
+    {
+        T item;
+        switch (id)
+        {
+            case TicketSaleHolder.VIEW_TYPE:
+                item = (T) new TicketSaleSortedItem(range, weight);
+                break;
+            case TicketHolder.VIEW_TYPE:
+            default:
+                item = (T) new TokenIdSortedItem(range, weight);
+                break;
+        }
+
+        return item;
+    }
+
+    protected <T> SortedList<T> addSortedItems(List<TicketRangeElement> sortedList, Token t, int id)
+    {
+        int currentNumber = -1;
         int currentCat = 0;
 
         for (int i = 0; i < sortedList.size(); i++)
@@ -213,7 +186,8 @@ public class TicketAdapter extends TokensAdapter {
             else if (currentRange == null || e.ticketNumber != currentNumber + 1 || e.category != currentCat) //check consecutive seats and zone is still the same, and push final ticket
             {
                 currentRange = new TicketRange(e.id, t.getAddress());
-                items.add(new TokenIdSortedItem(currentRange, 10 + i));
+                final T item = generateType(currentRange, 10 + i, id);
+                items.add((SortedItem)item);
                 currentCat = e.category;
             }
             else
@@ -223,6 +197,8 @@ public class TicketAdapter extends TokensAdapter {
             }
             currentNumber = e.ticketNumber;
         }
+
+        return null;
     }
 }
 

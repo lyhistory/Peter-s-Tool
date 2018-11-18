@@ -35,7 +35,6 @@ import static io.stormbird.wallet.C.DEFAULT_NETWORK;
 import static io.stormbird.wallet.C.DOWNLOAD_READY;
 import static io.stormbird.wallet.C.HARD_CODED_KEY;
 import static io.stormbird.wallet.C.OVERRIDE_DEFAULT_NETWORK;
-import static io.stormbird.wallet.C.PRE_LOADED_KEY;
 import static io.stormbird.wallet.viewmodel.HomeViewModel.ALPHAWALLET_FILE_URL;
 
 public class SplashViewModel extends ViewModel {
@@ -91,22 +90,7 @@ public class SplashViewModel extends ViewModel {
                 }
             }
         }
-
-        checkHardCodedKey();
-    }
-
-    //2. Check hardcoded key
-    private void checkHardCodedKey()
-    {
-        //Chain events to eliminate race condition
-        //first check if hard coded key is present, if it is then call it and chain contract check
-        if (HARD_CODED_KEY) {
-            addHardKey(PRE_LOADED_KEY);
-        }
-        else
-        {
-            fetchWallets();
-        }
+        fetchWallets();
     }
 
     //4. fetch wallets
@@ -131,14 +115,6 @@ public class SplashViewModel extends ViewModel {
 
         //continue chain
         fetchWallets();
-    }
-
-    //6. add hard coded contract
-    private void addContract(String address, String symbol, int decimals, String name) {
-        TokenInfo tokenInfo = getTokenInfo(address, symbol, decimals, name, true);
-        addTokenInteract
-                .add(tokenInfo)
-                .subscribe(this::fetchWallets, this::onContractError); //directly call fetch wallets if successful
     }
 
     private void fetchWallets(Token token)

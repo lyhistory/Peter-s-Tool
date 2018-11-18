@@ -11,6 +11,7 @@ import io.stormbird.wallet.entity.TokenInfo;
 import io.stormbird.wallet.entity.TransferFromEventResponse;
 import io.stormbird.wallet.entity.Wallet;
 
+import java.math.BigInteger;
 import java.util.List;
 
 import io.reactivex.Completable;
@@ -18,6 +19,7 @@ import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.Single;
 import io.reactivex.disposables.Disposable;
+import io.stormbird.wallet.service.AssetDefinitionService;
 import rx.functions.Action1;
 
 public interface TokenRepositoryType {
@@ -35,17 +37,21 @@ public interface TokenRepositoryType {
     Observable<Token> fetchActiveTokenBalance(Token token, NetworkInfo network, Wallet wallet);
     Observable<Token[]> fetchAll(String walletAddress);
     Completable setEnable(Wallet wallet, Token token, boolean isEnabled);
-    Observable<TokenInfo> update(String address);
+    Observable<TokenInfo> update(String address, boolean isERC875);
     Single<TokenInfo[]> update(String[] address);
     rx.Subscription memPoolListener(SubscribeWrapper wrapper); //only listen to transactions relating to this address
     rx.Observable<TransferFromEventResponse> burnListenerObservable(String contractAddress);
     Single<Token> addToken(Wallet wallet, TokenInfo tokenInfo);
+    Single<Token> addToken(Wallet wallet, TokenInfo tokenInfo, int interfaceSpec);
+    Single<Token> callTokenFunctions(Token token, AssetDefinitionService service);
     Completable setBurnList(Wallet wallet, Token token, List<Integer> burnList);
     Single<Token[]> addTokens(Wallet wallet, TokenInfo[] tokenInfos);
     Single<Ticker> getEthTicker();
     Single<Token> getEthBalance(NetworkInfo network, Wallet wallet);
+    Single<BigInteger> fetchLatestBlockNumber();
 
     void terminateToken(Token token, Wallet wallet, NetworkInfo network);
 
     Single<Token[]> addERC721(Wallet wallet, Token[] tokens);
+    Single<String> callAddressMethod(String method, byte[] resultHash, String address);
 }

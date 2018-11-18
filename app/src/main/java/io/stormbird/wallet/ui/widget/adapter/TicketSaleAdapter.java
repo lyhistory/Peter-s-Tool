@@ -1,14 +1,20 @@
 package io.stormbird.wallet.ui.widget.adapter;
 
-import android.content.Context;
 import android.view.ViewGroup;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import io.stormbird.token.entity.TicketRange;
 import io.stormbird.wallet.R;
+import io.stormbird.wallet.entity.ERC721Token;
 import io.stormbird.wallet.entity.Ticket;
 import io.stormbird.wallet.entity.TicketRangeElement;
+import io.stormbird.wallet.entity.Token;
 import io.stormbird.wallet.service.AssetDefinitionService;
 import io.stormbird.wallet.ui.widget.OnTicketIdClickListener;
 import io.stormbird.wallet.ui.widget.OnTokenCheckListener;
+import io.stormbird.wallet.ui.widget.entity.AssetSortedItem;
 import io.stormbird.wallet.ui.widget.entity.MarketSaleHeaderSortedItem;
 import io.stormbird.wallet.ui.widget.entity.QuantitySelectorSortedItem;
 import io.stormbird.wallet.ui.widget.entity.RedeemHeaderSortedItem;
@@ -16,6 +22,8 @@ import io.stormbird.wallet.ui.widget.entity.TicketSaleSortedItem;
 import io.stormbird.wallet.ui.widget.entity.TokenIdSortedItem;
 import io.stormbird.wallet.ui.widget.entity.TransferHeaderSortedItem;
 import io.stormbird.wallet.ui.widget.holder.BinderViewHolder;
+import io.stormbird.wallet.ui.widget.holder.OpenseaHolder;
+import io.stormbird.wallet.ui.widget.holder.OpenseaSelectHolder;
 import io.stormbird.wallet.ui.widget.holder.QuantitySelectorHolder;
 import io.stormbird.wallet.ui.widget.holder.RedeemTicketHolder;
 import io.stormbird.wallet.ui.widget.holder.SalesOrderHeaderHolder;
@@ -24,12 +32,6 @@ import io.stormbird.wallet.ui.widget.holder.TicketSaleHolder;
 import io.stormbird.wallet.ui.widget.holder.TokenDescriptionHolder;
 import io.stormbird.wallet.ui.widget.holder.TotalBalanceHolder;
 import io.stormbird.wallet.ui.widget.holder.TransferHeaderHolder;
-import io.stormbird.token.entity.NonFungibleToken;
-import io.stormbird.token.entity.TicketRange;
-
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Created by James on 12/02/2018.
@@ -42,7 +44,7 @@ public class TicketSaleAdapter extends TicketAdapter {
     private QuantitySelectorHolder quantitySelector;
 
     /* Context ctx is used to initialise assetDefinition in the super class */
-    public TicketSaleAdapter(OnTicketIdClickListener onTicketIdClickListener, Ticket t, AssetDefinitionService assetService) {
+    public TicketSaleAdapter(OnTicketIdClickListener onTicketIdClickListener, Token t, AssetDefinitionService assetService) {
         super(onTicketIdClickListener, t, assetService, null);
         onTokenCheckListener = this::onTokenCheck;
         selectedTicketRange = null;
@@ -82,84 +84,84 @@ public class TicketSaleAdapter extends TicketAdapter {
             case TransferHeaderHolder.VIEW_TYPE: {
                 holder = new TransferHeaderHolder(R.layout.item_redeem_ticket, parent);
             } break;
+            case OpenseaHolder.VIEW_TYPE: {
+                holder = new OpenseaSelectHolder(R.layout.item_opensea_token, parent, token);
+                ((OpenseaSelectHolder)holder).setOnTokenCheckListener(onTokenCheckListener);
+            } break;
         }
 
         return holder;
     }
 
-    public void setTransferTicket(Ticket t) {
+    public void setTransferTicket(Token t) {
         items.beginBatchedUpdates();
         items.clear();
         items.add(new TransferHeaderSortedItem(t));
-        addRanges(t);
+        addTokens(t);
 
         items.endBatchedUpdates();
     }
 
-    private void addRanges(Ticket t)
+    private void addTokens(Token t)
     {
-        TicketRange currentRange = null;
-        int currentNumber = -1;
-
-        //first sort the balance array
-        List<TicketRangeElement> sortedList = new ArrayList<>();
-        for (BigInteger v : t.balanceArray)
+        if (t instanceof ERC721Token)
         {
-            if (v.compareTo(BigInteger.ZERO) == 0) continue;
-            TicketRangeElement e = new TicketRangeElement();
-            e.id = v;
-            NonFungibleToken nft = assetService.getNonFungibleToken(t.getAddress(), v);
-            if (nft != null)
-            {
-                e.ticketNumber = nft.getAttribute("numero").value.intValue();
-                e.category = (short) nft.getAttribute("category").value.intValue();
-                e.match = (short) nft.getAttribute("match").value.intValue();
-                e.venue = (short) nft.getAttribute("venue").value.intValue();
-            }
-            sortedList.add(e);
+            setERC721Contract(t);
         }
-        TicketRangeElement.sortElements(sortedList);
-
-        int currentCat = 0;
-
-        for (int i = 0; i < sortedList.size(); i++)
+        else if (t instanceof Ticket)
         {
-            TicketRangeElement e = sortedList.get(i);
-            if (currentRange != null && e.id.equals(currentRange.tokenIds.get(0)))
-            {
-                currentRange.tokenIds.add(e.id);
-            }
-            else if (currentRange == null || e.ticketNumber != currentNumber + 1 || e.category != currentCat) //check consecutive seats and zone is still the same, and push final ticket
-            {
-                currentRange = new TicketRange(e.id, t.getAddress());
-                items.add(new TicketSaleSortedItem(currentRange, 10 + i));
-                currentCat = e.category;
-            }
-            else
-            {
-                //update
-                currentRange.tokenIds.add(e.id);
-            }
-            currentNumber = e.ticketNumber;
+            addRanges(t);
+        }
+        else
+        {
+            System.out.println("*** UNKNOWN TOKEN IN LIST **");
         }
     }
 
-    public void setTicket(Ticket t) {
+    private void addRanges(Token t)
+    {
+        //first sort the balance array
+        currentRange = null;
+        List<TicketRangeElement> sortedList = generateSortedList(assetService, token, ((Ticket)t).balanceArray);
+        addSortedItems(sortedList, t, TicketSaleSortedItem.VIEW_TYPE);
+    }
+
+    @Override
+    public void setToken(Token t) {
         items.beginBatchedUpdates();
         items.clear();
         items.add(new MarketSaleHeaderSortedItem(t));
 
         addRanges(t);
         items.endBatchedUpdates();
+        notifyDataSetChanged();
     }
 
-    public void setRedeemTicket(Ticket t) {
+    public void setRedeemTicket(Token t) {
         items.beginBatchedUpdates();
         items.clear();
         items.add(new RedeemHeaderSortedItem(t));
 
         addRanges(t);
         items.endBatchedUpdates();
+    }
+
+    //TODO: Make this into a single templated fetch
+    public List<String> getERC721Checked()
+    {
+        List<String> checkedItems = new ArrayList<>();
+        for (int i = 0; i < items.size(); i++)
+        {
+            if (items.get(i) instanceof AssetSortedItem)
+            {
+                AssetSortedItem thisItem = (AssetSortedItem) items.get(i);
+                if (thisItem.value.isChecked)
+                {
+                    checkedItems.add(thisItem.value.getTokenId());
+                }
+            }
+        }
+        return checkedItems;
     }
 
     public List<TicketRange> getCheckedItems()
@@ -185,7 +187,7 @@ public class TicketSaleAdapter extends TicketAdapter {
         return selectedTicketRange;
     }
 
-    public void setRedeemTicketQuantity(TicketRange range, Ticket ticket)
+    public void setRedeemTicketQuantity(TicketRange range, Token ticket)
     {
         items.beginBatchedUpdates();
         items.clear();
