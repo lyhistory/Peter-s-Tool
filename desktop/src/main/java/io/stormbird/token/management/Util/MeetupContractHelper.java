@@ -40,12 +40,8 @@ public class MeetupContractHelper {
         String host,port,url;
         switch (networkid){
             case "1":
-                host="https://infura.io/v3/3305734c1fad4ad1ab11fd0e9a74059e";
+                host="https://mainnet.infura.io/v3/3305734c1fad4ad1ab11fd0e9a74059e";
                 port="80";
-                break;
-            case "2":
-                host="";
-                port="";
                 break;
             case "3":
                 host="https://ropsten.infura.io/v3/3305734c1fad4ad1ab11fd0e9a74059e";

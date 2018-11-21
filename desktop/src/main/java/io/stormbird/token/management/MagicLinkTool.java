@@ -65,8 +65,8 @@ import java.util.concurrent.ConcurrentHashMap;
  **/
 public class MagicLinkTool extends JFrame{
     public InputStream ticketXMLTemplate = getClass().getResourceAsStream("/MeetupContract.xml");
-    public String ticketXMLFilePath = "./desktop/res/MeetupContract.xml";
-    public String magicLinksCSVPath = "./desktop/res/magiclinks.csv";
+    public String ticketXMLFilePath = "./res/MeetupContract.xml";
+    public String magicLinksCSVPath = "./res/magiclinks.csv";
 
     private JSplitPane mainSplitPane;
     private JPanel mainSplitPane_topPane;

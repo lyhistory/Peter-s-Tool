@@ -18,7 +18,7 @@ import java.util.Base64;
 //import java.security.KeyStore;
 
 public class KeyStoreManager {
-    public String privateKeyFilePath = "./desktop/res/keystore.ks";
+    public String privateKeyFilePath = "./res/keystore.ks";
     private KeyStore keyStore;
     private final static String keyStorePasswordStr="alpha-wallet";
     private final static String keyEntryPasswordStr=getMacID();
