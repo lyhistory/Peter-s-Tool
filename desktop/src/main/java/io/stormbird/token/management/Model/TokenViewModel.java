@@ -45,6 +45,12 @@ public class TokenViewModel extends TokenDefinition {
                 textFieldDataModel.setBitshift(attr.bitshift);
                 textFieldDataModel.setType(attr.syntax.name());
                 textFieldDataModel.setAs(attr.as.name());
+                if(attr.as.name().equalsIgnoreCase("utf8")){
+                    textFieldDataModel.setLengthlimit(attr.bitmask.bitCount()/8);
+                }
+                if(attr.name.equalsIgnoreCase("country")){
+                    textFieldDataModel.setPlaceholder("e.g. US/CN");
+                }
                 this.textFieldDataModelList.add(textFieldDataModel);
             }
         }

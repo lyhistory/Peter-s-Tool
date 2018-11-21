@@ -1,7 +1,9 @@
 package io.stormbird.token.management;
 
+import com.sun.media.sound.MidiOutDeviceProvider;
 import io.stormbird.token.entity.EthereumReadBuffer;
 import io.stormbird.token.management.CustomComponents.DateTimePicker;
+import io.stormbird.token.management.CustomComponents.JTextFieldLimit;
 import io.stormbird.token.management.Model.*;
 import io.stormbird.token.management.Util.KeyStoreManager;
 import io.stormbird.token.management.Util.MeetupContractHelper;
@@ -13,6 +15,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.web3j.crypto.Credentials;
 import org.web3j.crypto.Sign;
@@ -78,21 +81,37 @@ public class MagicLinkTool extends JFrame{
     private TokenViewModel _tokenViewModel;
     private Map<Integer, MagicLinkToolViewModel> _magicLinkViewMap;
     private static ArrayList<MagicLinkDataModel> _magicLinkDataModelArrayList;
-    MeetupContractHelper contractHelper;
+
+    private MeetupContractHelper contractHelper;
+
+    private Map<String,String> keys;
+
+    private void initContract() throws IOException, SAXException {
+        if(keys==null){
+            keys = loadWalletFromKeystore();
+        }
+        File f = new File(ticketXMLFilePath);
+        if (f.exists()==true) {
+
+            _tokenViewModel = new TokenViewModel(new FileInputStream(ticketXMLFilePath), Locale.getDefault());
+            if (_tokenViewModel.comboBoxContractAddressList != null
+                    &&
+                    keys != null && keys.size() > 0) {
+                contractHelper = new MeetupContractHelper(_tokenViewModel.comboBoxContractAddressList.get(0).getKey(),
+                        _tokenViewModel.comboBoxContractAddressList.get(0).getValue(),
+                        keys.entrySet().iterator().next().getValue());
+            }
+        }
+    }
     public MagicLinkTool(){
         try {
-            Map<String,String> keys = loadWalletFromKeystore();
-            _tokenViewModel = new TokenViewModel(new FileInputStream(ticketXMLFilePath), Locale.getDefault());
-            if(_tokenViewModel.comboBoxContractAddressList!=null
-                    &&
-                    keys!=null&&keys.size()>0) {
-                contractHelper = new MeetupContractHelper(_tokenViewModel.comboBoxContractAddressList.get(0).getKey(), keys.entrySet().iterator().next().getValue());
-            }
+
+            initContract();
             _magicLinkViewMap = new ConcurrentHashMap<>();
             _magicLinkDataModelArrayList = loadMagicLinksFromCSV();
 
             this.setJMenuBar(createMenuBar());
-            this.initUpperPane(keys);    //Private key Dropdownlist
+            this.initUpperPane();    //Private key Dropdownlist
             this.initTabPane();      //Magic Link Generation Pane
             this.mainSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, mainSplitPane_topPane, mainSplitPane_tabPane);
             //this.mainSplitPane.setMinimumSize(new Dimension(900,300));
@@ -176,7 +195,7 @@ public class MagicLinkTool extends JFrame{
     }
 
     //create UpperPane: manage private key
-    private  void initUpperPane(Map<String,String> keys) {
+    private  void initUpperPane() {
 
         mainSplitPane_topPane = new JPanel();
         FlowLayout flowLayout = new FlowLayout();
@@ -228,7 +247,7 @@ public class MagicLinkTool extends JFrame{
     }
 
     //create TabPane: manage magic link creation
-    private  void initTabPane(){
+    private  void initTabPane() throws IOException, SAXException {
         //init tabpane
         mainSplitPane_tabPane = new JTabbedPane();
         tabPane_container = new JPanel();
@@ -256,6 +275,7 @@ public class MagicLinkTool extends JFrame{
         JComboBox comboBoxNetworkID=new JComboBox();
         comboBoxNetworkID.addItem(new ComboBoxSimpleItem("mainnet", "1"));
         comboBoxNetworkID.addItem(new ComboBoxSimpleItem("Ropsten", "3"));
+        comboBoxNetworkID.addItem(new ComboBoxSimpleItem("CustomRPC", "0"));
 
         JPanel centerPane = new JPanel();
         centerPane.add(new JLabel("Contract Address:"));
@@ -293,19 +313,20 @@ public class MagicLinkTool extends JFrame{
         tabPane_wizard.add(southPane,BorderLayout.SOUTH);
         tabPane_container.add(tabPane_wizard);
     }
-    private void initTabPaneContainer(){
+    private void initTabPaneContainer() throws IOException, SAXException {
 
         //TopPane: contract address
         JPanel northPane = new JPanel();
         northPane.add(new JLabel("Contract:"));
         comboBoxContractAddress = new JComboBox();
+        if(_tokenViewModel==null){
+            initContract();
+        }
         for(ComboBoxSimpleItem item : _tokenViewModel.comboBoxContractAddressList) {
             comboBoxContractAddress.addItem(item);
             comboBoxContractAddress.setEnabled(true);
         }
         northPane.add(comboBoxContractAddress);
-
-
 
         //CenterPane: main container for magic link
         GridBagConstraints col1Constraints = new GridBagConstraints();
@@ -376,7 +397,11 @@ public class MagicLinkTool extends JFrame{
         for(TextFieldDataModel model : _tokenViewModel.textFieldDataModelList){
             GridBagConstraints colConstraints = getGridConstraints(gridx,gridy,0.4,0);
             JLabel labelAttrName = new JLabel();
-            labelAttrName.setText(model.name);
+            if(model.getPlaceholder()!=null&&model.getPlaceholder()!=""){
+                labelAttrName.setText(model.getName()+"("+model.getPlaceholder()+")");
+            }else {
+                labelAttrName.setText(model.getName());
+            }
             tabPane_container_centerPane.add(labelAttrName,colConstraints);
             gridx++;
         }
@@ -469,7 +494,11 @@ public class MagicLinkTool extends JFrame{
 
                 magicLinkViewModel.setDateTimePickerMap(dateTimePickerTime,timeZoneTime,model);
             }else {
-                JTextField textFieldInput = new JTextField();
+                JTextField textFieldInput;
+                textFieldInput = new JTextField();
+                if(model.getLengthlimit()>0){
+                    textFieldInput.setDocument(new JTextFieldLimit(model.getLengthlimit()));
+                }
                 textFieldInput.setName(model.id);
                 textFieldInput.setEditable(enabled);
                 textFieldInput.setEnabled(enabled);
@@ -985,6 +1014,7 @@ public class MagicLinkTool extends JFrame{
         Transformer transformer=null;
         try {
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+            dbFactory.setNamespaceAware(true);
             dBuilder = dbFactory.newDocumentBuilder();
             xml = dBuilder.parse(ticketXMLTemplate);
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
@@ -992,24 +1022,20 @@ public class MagicLinkTool extends JFrame{
             createFileIfNotExists(ticketXMLFilePath);
 
             xml.getDocumentElement().normalize(); // also good for parcel
-            NodeList contractList = xml.getElementsByTagName("contract");
-            //.getElementById("holding_contract");
-            for(int i=0;i<contractList.getLength();++i){
-                Element ele = (Element)contractList.item(i);
-                if(ele.getAttribute("id").equals("holding_contract")){
-                    NodeList addressNodes = ele.getElementsByTagName("address");
-                    int size = addressNodes.getLength();
-                    for(int j=0;j<size;j++){
-                        ele.removeChild(addressNodes.item(0));
-                    }
-                    Element newNode = xml.createElement("address");
-                    newNode.setAttribute("network",networkid);
-                    newNode.setTextContent(contractAddress);
-                    ele.appendChild(newNode);
-                    break;
-                }
-            }
+            NodeList nList = xml.getElementsByTagNameNS("http://attestation.id/ns/tbml","contract");
+            Element contract = (Element) nList.item(0);
 
+            if(contract.getAttribute("id").equals("holding_contract")) {
+                nList = contract.getElementsByTagNameNS("http://attestation.id/ns/tbml", "address");
+                int size = nList.getLength();
+                for (int j = 0; j < size; j++) {
+                    contract.removeChild(nList.item(0));
+                }
+                Element newNode = xml.createElement(contract.getPrefix()+":address");
+                newNode.setAttribute("network", networkid);
+                newNode.setTextContent(contractAddress);
+                contract.appendChild(newNode);
+            }
             DOMSource source = new DOMSource(xml);
             StreamResult result = new StreamResult(new File(ticketXMLFilePath));
             transformer.transform(source, result);

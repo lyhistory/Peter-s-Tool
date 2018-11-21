@@ -10,6 +10,9 @@ public class TextFieldDataModel {
     public String as;
     public String type;
 
+    public String placeholder;
+    public int lengthlimit;
+
     public String getId(){
         return this.id;
     }
@@ -46,4 +49,9 @@ public class TextFieldDataModel {
     public void setType(String type){
         this.type=type;
     }
+    public String getPlaceholder(){return this.placeholder;}
+    public void setPlaceholder(String placeholder){this.placeholder=placeholder;}
+    public int getLengthlimit(){return this.lengthlimit;}
+    public void setLengthlimit(int lengthlimit){this.lengthlimit=lengthlimit;}
+
 }
