@@ -65,8 +65,8 @@ import java.util.concurrent.ConcurrentHashMap;
  **/
 public class MagicLinkTool extends JFrame{
     public InputStream ticketXMLTemplate = getClass().getResourceAsStream("/MeetupContract.xml");
-    public String ticketXMLFilePath = "./res/MeetupContract.xml";
-    public String magicLinksCSVPath = "./res/magiclinks.csv";
+    public String ticketXMLFilePath = "./desktop/res/MeetupContract.xml";
+    public String magicLinksCSVPath = "./desktop/res/magiclinks.csv";
 
     private JSplitPane mainSplitPane;
     private JPanel mainSplitPane_topPane;
@@ -992,7 +992,7 @@ public class MagicLinkTool extends JFrame{
     }
     private boolean createFileIfNotExists(String filePath){
         try {
-            File f = new File(filePath);
+            File f =  new File(filePath);
             if (f.exists()==false) {
                 if(f.getParentFile().exists()==false){
                     f.getParentFile().mkdirs();

@@ -1,6 +1,6 @@
 package io.stormbird.token.management.Util;
 
-import io.stormbird.token.management.contracts.generated.TicketPro;
+import io.stormbird.token.management.contracts.generated.Meetup;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
@@ -19,7 +19,7 @@ public class MeetupContractHelper {
     private Web3j web3j;
     private Credentials credentials;
     private ContractGasProvider contractGasProvider;
-    private TicketPro contract;
+    private Meetup contract;
     public static enum RedeemStatus{
         Redeemed,
         NotRedeemed,
@@ -64,7 +64,7 @@ public class MeetupContractHelper {
         credentials =
                 Credentials.create(privateKey);
         contractGasProvider = new DefaultGasProvider();
-        contract = TicketPro.load(contractAddress, web3j, credentials, contractGasProvider);
+        contract = Meetup.load(contractAddress, web3j, credentials, contractGasProvider);
     }
     public RedeemStatus checkSpawnableTokenRedeemStatus(BigInteger tokenID){
         try {
@@ -91,7 +91,7 @@ public class MeetupContractHelper {
 
             TransactionReceipt transactionReceipt =  contract.spawnPassTo(expiry,tickets,biV,r,s,recipient).send();
             boolean spawned = contract.spawned(tickets.get(0)).send();
-            String getTheContractAddress =  contract.getTheContractAddress().send();
+            String getTheContractAddress =  contract.getThisContractAddress().send();
         }catch (ConnectException e){
             connected = false;
             e.printStackTrace();
