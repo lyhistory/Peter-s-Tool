@@ -1,10 +1,11 @@
 package io.stormbird.token.management;
 
-import com.sun.media.sound.MidiOutDeviceProvider;
 import io.stormbird.token.entity.EthereumReadBuffer;
 import io.stormbird.token.management.CustomComponents.DateTimePicker;
 import io.stormbird.token.management.CustomComponents.JTextFieldLimit;
 import io.stormbird.token.management.Model.*;
+import io.stormbird.token.management.Util.CryptoHelper;
+import io.stormbird.token.management.Util.FileHelper;
 import io.stormbird.token.management.Util.KeyStoreManager;
 import io.stormbird.token.management.Util.MeetupContractHelper;
 import org.apache.commons.csv.CSVFormat;
@@ -15,10 +16,8 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.web3j.crypto.Credentials;
-import org.web3j.crypto.Sign;
 import org.web3j.utils.Convert;
 import org.xml.sax.SAXException;
 
@@ -76,6 +75,7 @@ public class MagicLinkTool extends JFrame{
     private JPanel tabPane_wizard;
     private JComboBox comboBoxContractAddress;
     private JPanel tabPane_container_centerPane;
+    private JTextField textFieldPrivateKey;
 
     private static int magicLinkCount=0;
     private TokenViewModel _tokenViewModel;
@@ -83,36 +83,20 @@ public class MagicLinkTool extends JFrame{
     private static ArrayList<MagicLinkDataModel> _magicLinkDataModelArrayList;
 
     private MeetupContractHelper contractHelper;
-
     private Map<String,String> keys;
 
-    private void initContract() throws IOException, SAXException {
-        if(keys==null){
-            keys = loadWalletFromKeystore();
-        }
-        File f = new File(ticketXMLFilePath);
-        if (f.exists()==true) {
-
-            _tokenViewModel = new TokenViewModel(new FileInputStream(ticketXMLFilePath), Locale.getDefault());
-            if (_tokenViewModel.comboBoxContractAddressList != null
-                    &&
-                    keys != null && keys.size() > 0) {
-                contractHelper = new MeetupContractHelper(_tokenViewModel.comboBoxContractAddressList.get(0).getKey(),
-                        _tokenViewModel.comboBoxContractAddressList.get(0).getValue(),
-                        keys.entrySet().iterator().next().getValue());
-            }
-        }
-    }
     public MagicLinkTool(){
         try {
-
-            initContract();
+            //load keys and MeetupContract.xml if available
+            initContractHelper();
             _magicLinkViewMap = new ConcurrentHashMap<>();
+            //load magiclinks if available
             _magicLinkDataModelArrayList = loadMagicLinksFromCSV();
 
             this.setJMenuBar(createMenuBar());
-            this.initUpperPane();    //Private key Dropdownlist
-            this.initTabPane();      //Magic Link Generation Pane
+            //init using keys if available
+            this.createUpperPaneForKeys();
+            this.createTabPane();
             this.mainSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, mainSplitPane_topPane, mainSplitPane_tabPane);
             //this.mainSplitPane.setMinimumSize(new Dimension(900,300));
             this.setContentPane(mainSplitPane);
@@ -129,12 +113,9 @@ public class MagicLinkTool extends JFrame{
                 }
             });
 
-
             this.setLocationByPlatform(true);
             this.setResizable(true);
             this.pack();
-
-
         } catch (IllegalArgumentException e){
             e.printStackTrace();
             //log exception
@@ -144,13 +125,15 @@ public class MagicLinkTool extends JFrame{
             e.printStackTrace();
         }
     }
-
     public static void main(String args[]) {
         MagicLinkTool magicLinkTool = new MagicLinkTool();
         magicLinkTool.setVisible(true);
     }
 
-    //create MenuBar
+    /**
+     * Create Top Menu
+     * @return
+     */
     public JMenuBar createMenuBar() {
         JMenuBar menuBar;
         JMenu menu, submenu;
@@ -170,12 +153,10 @@ public class MagicLinkTool extends JFrame{
         //menuItem.addActionListener(this);
         menu.add(menuItem);
         menu.addSeparator();
-
         menuItem = new JMenuItem("Export magic links...",
                 KeyEvent.VK_T);
         //menuItem.addActionListener(this);
         menu.add(menuItem);
-
         //Build second menu in the menu bar.
         menu = new JMenu("Help");
         menu.setMnemonic(KeyEvent.VK_N);
@@ -190,13 +171,13 @@ public class MagicLinkTool extends JFrame{
             }
         });
         menu.add(menuItem);
-
         return menuBar;
     }
 
-    //create UpperPane: manage private key
-    private  void initUpperPane() {
-
+    /**
+     *
+     */
+    private  void createUpperPaneForKeys() {
         mainSplitPane_topPane = new JPanel();
         FlowLayout flowLayout = new FlowLayout();
         flowLayout.setAlignment(FlowLayout.TRAILING);
@@ -211,7 +192,7 @@ public class MagicLinkTool extends JFrame{
         controlsPane.setLayout(new GridBagLayout());
 
         leftPane.add(new JLabel("PrivateKey:"));
-        JTextField textFieldPrivateKey = new JTextField();
+        textFieldPrivateKey = new JTextField();
         textFieldPrivateKey.setColumns(30);
         leftPane.add(textFieldPrivateKey);
         JButton buttonImport=new JButton();
@@ -219,18 +200,22 @@ public class MagicLinkTool extends JFrame{
         buttonImport.setForeground(Color.red);
         buttonImport.setBackground(Color.GREEN);
         buttonImport.addActionListener(new ActionListener() {
-                                           @Override
-                                           public void actionPerformed(ActionEvent e) {
-                                               try{
-                                                   String privateKey=textFieldPrivateKey.getText();
-                                                   String address = getEthAddress(privateKey);
-                                                   comboBoxKeysList.addItem(new ComboBoxSimpleItem(address,privateKey));
-                                               }catch (Exception ex){
-                                                   JOptionPane.showMessageDialog(null, "Invalid PrivateKey!",
-                                                           "Error", JOptionPane.ERROR_MESSAGE);
-                                               }
-                                           }
-                                       });
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try{
+                    String privateKey=textFieldPrivateKey.getText();
+                    String address = CryptoHelper.getEthAddress(privateKey);
+                    comboBoxKeysList.addItem(new ComboBoxSimpleItem(address,privateKey));
+                    if(keys==null){
+                        keys = new ConcurrentHashMap<>();
+                    }
+                    keys.put(address,privateKey);
+                }catch (Exception ex){
+                    JOptionPane.showMessageDialog(null, "Invalid PrivateKey!",
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
         leftPane.add(buttonImport);
         rightPane.add(new JLabel("Current Key:"));
         comboBoxKeysList = new JComboBox();
@@ -245,18 +230,54 @@ public class MagicLinkTool extends JFrame{
         mainSplitPane_topPane.add(rightPane);
         mainSplitPane_topPane.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
     }
+    /**
+     * used on the Main Screen
+     * rely on: PrivateKey and ticketXMLFilePath (MeetupContract.xml)
+     * @throws IOException
+     * @throws SAXException
+     */
+    private void initContractHelper() {
+        try {
+            if (keys == null) {
+                loadWalletFromKeystore();
+            }
+            File f = new File(ticketXMLFilePath);
+            if (f.exists() == true) {
 
-    //create TabPane: manage magic link creation
-    private  void initTabPane() throws IOException, SAXException {
-        //init tabpane
+                _tokenViewModel = new TokenViewModel(new FileInputStream(ticketXMLFilePath), Locale.getDefault());
+                if (_tokenViewModel.comboBoxContractAddressList != null
+                        &&
+                        keys != null && keys.size() > 0) {
+                    contractHelper = new MeetupContractHelper(_tokenViewModel.comboBoxContractAddressList.get(0).getKey(),
+                            _tokenViewModel.comboBoxContractAddressList.get(0).getValue(),
+                            keys.entrySet().iterator().next().getValue());
+                }
+            }
+        }catch (IOException ex){
+
+        }catch (SAXException ex){
+
+        }
+    }
+
+    /**
+     * rely on _magicLinkDataModelArrayList (magiclinks.csv)
+     * tab pane for:
+     * 1. creation wizard (provide contract address, network type, private key)
+     * 2. magic link generation Panel
+     * @throws IOException
+     * @throws SAXException
+     */
+    private  void createTabPane() throws IOException, SAXException {
+        //init tab pane
         mainSplitPane_tabPane = new JTabbedPane();
         tabPane_container = new JPanel();
         tabPane_container.setLayout(new BoxLayout(tabPane_container, BoxLayout.Y_AXIS));
         tabPane_container.setBorder(new EmptyBorder(10, 10, 10, 10));
         if(_magicLinkDataModelArrayList==null||_magicLinkDataModelArrayList.size()==0){
-            initWizard();
+            createWizard();
         }else{
-            initTabPaneContainer();
+            createMagicLinkPane();
         }
         mainSplitPane_tabPane.addTab("Meetup[x]",null, tabPane_container, "");
         mainSplitPane_tabPane.setMnemonicAt(0, KeyEvent.VK_1);
@@ -265,7 +286,12 @@ public class MagicLinkTool extends JFrame{
         mainSplitPane_tabPane.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
         mainSplitPane_tabPane.setMinimumSize(new Dimension(0,300));
     }
-    private void initWizard(){
+
+    /**
+     * one step wizard:
+     * contract address + network type + private key
+     */
+    private void createWizard(){
         tabPane_wizard = new JPanel();
         tabPane_wizard.setLayout(new BoxLayout(tabPane_wizard, BoxLayout.Y_AXIS));
         tabPane_wizard.setBorder(new EmptyBorder(10, 10, 10, 10));
@@ -288,22 +314,33 @@ public class MagicLinkTool extends JFrame{
         buttonNextStep.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                ComboBoxSimpleItem selectedNetworkItem = (ComboBoxSimpleItem) comboBoxNetworkID.getSelectedItem();
-                String networkid = selectedNetworkItem.getValue();
-                String contractAddress = textFieldContractAddress.getText();
-                // todo validation
-                if (contractAddress==null||contractAddress.equals("")) {
-                    textFieldContractAddress.selectAll();
+                if(keys==null||keys.size()<1){
                     JOptionPane.showMessageDialog(
                             null,
-                            "cannot be empty!",
+                            "Please import the private key which create this contract!",
                             "Warn",
-                            JOptionPane.ERROR_MESSAGE);
-                    contractAddress = null;
-                    textFieldContractAddress.requestFocusInWindow();
-                } else {
-                    updateContractAddress(networkid,contractAddress);
-
+                            JOptionPane.WARNING_MESSAGE);
+                    textFieldPrivateKey.requestFocus();
+                }else {
+                    ComboBoxSimpleItem selectedNetworkItem = (ComboBoxSimpleItem) comboBoxNetworkID.getSelectedItem();
+                    String networkid = selectedNetworkItem.getValue();
+                    String contractAddress = textFieldContractAddress.getText();
+                    // todo validation
+                    if (contractAddress == null || contractAddress.equals("")) {
+                        textFieldContractAddress.selectAll();
+                        JOptionPane.showMessageDialog(
+                                null,
+                                "Please key in the contract address",
+                                "Warn",
+                                JOptionPane.WARNING_MESSAGE);
+                        contractAddress = null;
+                        textFieldContractAddress.requestFocusInWindow();
+                    } else {
+                        //
+                        processContractXml(networkid, contractAddress);
+                        initContractHelper();
+                        createMagicLinkPane();
+                    }
                 }
             }
         });
@@ -313,16 +350,21 @@ public class MagicLinkTool extends JFrame{
         tabPane_wizard.add(southPane,BorderLayout.SOUTH);
         tabPane_container.add(tabPane_wizard);
     }
-    private void initTabPaneContainer() throws IOException, SAXException {
 
-        //TopPane: contract address
+    /**
+     * Magic Link creation Pane
+     */
+    private void createMagicLinkPane() {
+        //NorthPane: Contract Address
         JPanel northPane = new JPanel();
         northPane.add(new JLabel("Contract:"));
         comboBoxContractAddress = new JComboBox();
-        if(_tokenViewModel==null){
-            initContract();
+        if (_tokenViewModel == null) {
+            //log error
+            //alert something broken
+            return;
         }
-        for(ComboBoxSimpleItem item : _tokenViewModel.comboBoxContractAddressList) {
+        for (ComboBoxSimpleItem item : _tokenViewModel.comboBoxContractAddressList) {
             comboBoxContractAddress.addItem(item);
             comboBoxContractAddress.setEnabled(true);
         }
@@ -331,34 +373,36 @@ public class MagicLinkTool extends JFrame{
         //CenterPane: main container for magic link
         GridBagConstraints col1Constraints = new GridBagConstraints();
         col1Constraints.fill = GridBagConstraints.BOTH;
-        col1Constraints.anchor=GridBagConstraints.CENTER;
-        col1Constraints.ipadx=10;col1Constraints.ipady=10;
-        col1Constraints.weightx=0.5;
-        col1Constraints.gridwidth=1;
+        col1Constraints.anchor = GridBagConstraints.CENTER;
+        col1Constraints.ipadx = 10;
+        col1Constraints.ipady = 10;
+        col1Constraints.weightx = 0.5;
+        col1Constraints.gridwidth = 1;
         col1Constraints.gridx = 0;
         col1Constraints.gridy = 0;
         GridBagConstraints col2Constraints = new GridBagConstraints();
         col2Constraints.fill = GridBagConstraints.BOTH;
-        col2Constraints.anchor=GridBagConstraints.CENTER;
-        col2Constraints.ipadx=10;col2Constraints.ipady=10;
-        col2Constraints.weightx=0.5;
-        col2Constraints.gridwidth=1;
+        col2Constraints.anchor = GridBagConstraints.CENTER;
+        col2Constraints.ipadx = 10;
+        col2Constraints.ipady = 10;
+        col2Constraints.weightx = 0.5;
+        col2Constraints.gridwidth = 1;
         col2Constraints.gridx = 1;
         col2Constraints.gridy = 0;
         JPanel centerPane = new JPanel();
         centerPane.setLayout(new BoxLayout(centerPane, BoxLayout.Y_AXIS));
         tabPane_container_centerPane = new JPanel();
         tabPane_container_centerPane.setLayout(new GridBagLayout());
-        centerPane.add(tabPane_container_centerPane,BorderLayout.CENTER);
+        centerPane.add(tabPane_container_centerPane, BorderLayout.CENTER);
+
         //render container
         //render title
         initMagicLinkCreationColumnTitle();
         //render from autosaved magiclink.csv
-
-        if(_magicLinkDataModelArrayList==null||_magicLinkDataModelArrayList.size()==0){
+        if (_magicLinkDataModelArrayList == null || _magicLinkDataModelArrayList.size() == 0) {
             addAnotherTicket(null);
-        }else{
-            for(int i=0;i<_magicLinkDataModelArrayList.size();++i){
+        } else {
+            for (int i = 0; i < _magicLinkDataModelArrayList.size(); ++i) {
                 addAnotherTicket(_magicLinkDataModelArrayList.get(i));
             }
         }
@@ -373,10 +417,10 @@ public class MagicLinkTool extends JFrame{
             }
         });
 
-        tabPane_container.add(northPane,BorderLayout.NORTH);
-        tabPane_container.add(centerPane,BorderLayout.CENTER);
-        tabPane_container.add(buttonAddAnother,BorderLayout.SOUTH);
-        if(tabPane_wizard!=null) {
+        tabPane_container.add(northPane, BorderLayout.NORTH);
+        tabPane_container.add(centerPane, BorderLayout.CENTER);
+        tabPane_container.add(buttonAddAnother, BorderLayout.SOUTH);
+        if (tabPane_wizard != null) {
             tabPane_wizard.setVisible(false);
         }
         this.setResizable(true);
@@ -410,7 +454,6 @@ public class MagicLinkTool extends JFrame{
         tabPane_container_centerPane.add(new JLabel("Remark"),getGridConstraints(gridx,gridy,0.4,0));
 
     }
-
     // add new magicLink generation form in row, managed by Map<Integer, MagicLinkToolViewModel> _magicLinkViewMap
     private void addAnotherTicket(MagicLinkDataModel magicLinkData){
         boolean enabled=true;
@@ -756,11 +799,7 @@ public class MagicLinkTool extends JFrame{
 
         return data;
     }
-    private static String getEthAddress(String privateKey){
-        Credentials cs = Credentials.create(privateKey);
-        String publicKey = cs.getEcKeyPair().getPublicKey().toString(16);
-        return cs.getAddress();
-    }
+
 
     /**
      * UI Helper
@@ -887,8 +926,8 @@ public class MagicLinkTool extends JFrame{
     /**
      * File Helper
      */
-    private Map<String,String> loadWalletFromKeystore(){
-        Map<String,String> keys = new ConcurrentHashMap<>();
+    private void loadWalletFromKeystore(){
+        keys = new ConcurrentHashMap<>();
         try {
             KeyStoreManager manager=new KeyStoreManager();
             JSONArray array=manager.getKeys();
@@ -896,19 +935,9 @@ public class MagicLinkTool extends JFrame{
                 JSONObject obj = array.getJSONObject(i);
                 keys.put(obj.getString("address"),obj.getString("privatekey"));
             }
-//            Reader reader = Files.newBufferedReader(Paths.get(privateKeyFilePath));
-//            CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT);
-//            int i=0;
-//            for (CSVRecord csvRecord : csvParser) {
-//                if(i!=0) {
-//                    keys.put(csvRecord.get(0), csvRecord.get(1));
-//                }
-//                ++i;
-//            }
 
         }catch (Exception ex){
         }
-        return keys;
     }
     private ArrayList<MagicLinkDataModel> loadMagicLinksFromCSV(){
         ArrayList<MagicLinkDataModel> magicLinkDataModelList=new ArrayList<MagicLinkDataModel>();
@@ -968,7 +997,7 @@ public class MagicLinkTool extends JFrame{
     }
     private void saveMagicLinksToCSV(){
         if(_magicLinkViewMap.size()>0) {
-            if (createFileIfNotExists(magicLinksCSVPath)) {
+            if (FileHelper.createFileIfNotExists(magicLinksCSVPath)) {
                 try {
                     BufferedWriter writer = Files.newBufferedWriter(Paths.get(magicLinksCSVPath));
                     CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader("MagicLink", "Remark"));
@@ -990,24 +1019,25 @@ public class MagicLinkTool extends JFrame{
             }
         }
     }
-    private boolean createFileIfNotExists(String filePath){
-        try {
-            File f =  new File(filePath);
-            if (f.exists()==false) {
-                if(f.getParentFile().exists()==false){
-                    f.getParentFile().mkdirs();
-                }
-                f.createNewFile();
-            }
-            return true;
-        } catch (IOException e) {
-            JOptionPane.showMessageDialog(null,
-                    "unexpected error try to create "+filePath);
-            return false;
-        }
-    }
 
-    public void updateContractAddress(String networkid, String contractAddress){
+    /**
+     * used by wizard
+     * @param networkid
+     * @param contractAddress
+     */
+    public void processContractXml(String networkid, String contractAddress){
+        //step 1, create xml based on template
+        updateContractAddress(networkid,contractAddress);
+        //step 2, sign
+
+        //step 3, upload
+    }
+    /**
+     *
+     * @param networkid
+     * @param contractAddress
+     */
+    private void updateContractAddress(String networkid, String contractAddress){
         //update xml
         DocumentBuilder dBuilder;
         Document xml=null;
@@ -1019,7 +1049,7 @@ public class MagicLinkTool extends JFrame{
             xml = dBuilder.parse(ticketXMLTemplate);
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
             transformer = transformerFactory.newTransformer();
-            createFileIfNotExists(ticketXMLFilePath);
+            FileHelper.createFileIfNotExists(ticketXMLFilePath);
 
             xml.getDocumentElement().normalize(); // also good for parcel
             NodeList nList = xml.getElementsByTagNameNS("http://attestation.id/ns/tbml","contract");
@@ -1040,10 +1070,8 @@ public class MagicLinkTool extends JFrame{
             StreamResult result = new StreamResult(new File(ticketXMLFilePath));
             transformer.transform(source, result);
 
-            this.initTabPaneContainer();
         } catch (ParserConfigurationException e) {
             e.printStackTrace();
-            return;
         } catch (SAXException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -1053,7 +1081,5 @@ public class MagicLinkTool extends JFrame{
         } catch (TransformerException e) {
             e.printStackTrace();
         }
-
-
     }
 }

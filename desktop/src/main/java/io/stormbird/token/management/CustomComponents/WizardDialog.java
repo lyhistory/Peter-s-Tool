@@ -120,7 +120,7 @@ public class WizardDialog extends JDialog
                     contractAddress = null;
                     textFieldContractAddress.requestFocusInWindow();
                 } else {
-                    parent.updateContractAddress(networkid,contractAddress);
+                    parent.processContractXml(networkid,contractAddress);
                     clearAndHide();
                 }
             } else {
