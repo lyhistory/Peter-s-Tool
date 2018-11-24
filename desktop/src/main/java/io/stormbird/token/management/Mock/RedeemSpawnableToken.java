@@ -56,7 +56,7 @@ public class RedeemSpawnableToken extends JFrame{
                                                        Sign.SignatureData sig = sigFromByteArray(model.signature);
                                                        contractHelper.redeemSpawnableToken(BigInteger.valueOf(model.expiry),Arrays.asList(model.tickets),sig.getV(),sig.getR(),sig.getS(),recepient);
                                                    }
-                                               }
+                                                   }
                                            });
             mainPanel.add(buttonRedeem);
             this.setContentPane(mainPanel);
@@ -95,9 +95,9 @@ public class RedeemSpawnableToken extends JFrame{
             ByteArrayInputStream bas = new ByteArrayInputStream(bytes);
             EthereumReadBuffer ds = new EthereumReadBuffer(bas);
 
-            //data.contractType = ds.readByte();
-            szabo = ds.readBI().intValue();;//ds.toUnsignedLong(ds.readInt());
-            data.expiry = ds.readBI().longValue();
+            data.contractType = ds.readByte(); //drop
+            szabo = ds.toUnsignedLong(ds.readInt());
+            data.expiry = ds.toUnsignedLong(ds.readInt());
             data.priceWei = Convert.toWei(BigDecimal.valueOf(szabo), Convert.Unit.SZABO).toBigInteger();
             data.contractAddress = ds.readAddress();
             int ticketCount = (ds.available() - 65) / 32;

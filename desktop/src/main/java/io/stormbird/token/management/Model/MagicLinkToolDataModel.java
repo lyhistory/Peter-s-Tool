@@ -66,7 +66,9 @@ public class MagicLinkToolDataModel {
     {
         ECKeyPair ecKeyPair  = ECKeyPair.create(privateKeyOfOrganiser);
         //returns the v, r and s signature params
-        return Sign.signMessage(linkData, ecKeyPair);
+        byte[] dropLeadingByte=new byte[linkData.length-1];
+        System.arraycopy(linkData, 1, dropLeadingByte, 0, linkData.length-1);
+        return Sign.signMessage(dropLeadingByte, ecKeyPair);
     }
     private static byte[] encodeMessageForSpawning (
             BigInteger priceInSzabo,
@@ -78,20 +80,22 @@ public class MagicLinkToolDataModel {
         //0x02: Spawn token magic link.
         //0x03: Customisable spawn token link.
         int byteLength=0;
-        //byte[] leadingbytes = hexStringToBytes("02");
-        //byteLength=1;//leading lenght
+        byte[] leadingbyte = hexStringToBytes("02");
+        byteLength=1;//leading lenght
+
         byte[] priceInMicroWei = priceInSzabo.toByteArray();
-        byteLength+=32;//priceinwei
+        byteLength+=4;//priceinwei
         byte[] expiry = expiryTimestamp.toByteArray();
-        byteLength+=32;//expiry
+        byteLength+=4;//expiry
         byteLength+=20;//contract address
         byteLength+=tickets.length*32;//tickets
         ByteBuffer message = ByteBuffer.allocate(byteLength);
         //message.put(leadingbytes);
-        byte[] leadingZeros = new byte[32 - priceInMicroWei.length];
+        byte[] leadingZeros = new byte[4 - priceInMicroWei.length];
+        message.put(leadingbyte);
         message.put(leadingZeros);
         message.put(priceInMicroWei);
-        byte[] leadingZerosExpiry = new byte[32 - expiry.length];
+        byte[] leadingZerosExpiry = new byte[4 - expiry.length];
         message.put(leadingZerosExpiry);
         message.put(expiry);
         byte[] contract = hexStringToBytes(Numeric.cleanHexPrefix(contractAddress));
