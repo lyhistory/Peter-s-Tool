@@ -2,8 +2,10 @@ package io.stormbird.token.management.Model;
 
 import org.web3j.crypto.ECKeyPair;
 import org.web3j.crypto.Sign;
+import org.web3j.utils.Convert;
 import org.web3j.utils.Numeric;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.text.DateFormat;
@@ -45,8 +47,9 @@ public class MagicLinkToolDataModel {
             date = df.parse(this.Expiry);
             BigInteger expiryTimestamp = BigInteger.valueOf(date.getTime() / 1000);
 
-            byte[] linkData = encodeMessageForSpawning(priceInSzabo, expiryTimestamp, this.TokenIDs, this.ContractAddress);
-            Sign.SignatureData signedData = signMagicLink(linkData, privateKey);
+            byte[] linkData = encodeLinkDataForSpawning(priceInSzabo, expiryTimestamp, this.TokenIDs, this.ContractAddress);
+            byte[] toSignData = encodeSignDataForSpawning(priceInSzabo, expiryTimestamp, this.TokenIDs, this.ContractAddress);
+            Sign.SignatureData signedData = signMagicLink(toSignData, privateKey);
             byte[] signature = covertSigToByte(signedData);
             byte[] completeLink = new byte[linkData.length + signature.length];
             System.arraycopy(linkData, 0, completeLink, 0, linkData.length);
@@ -62,15 +65,13 @@ public class MagicLinkToolDataModel {
             e.printStackTrace();
         }
     }
-    private Sign.SignatureData signMagicLink(byte[] linkData, BigInteger privateKeyOfOrganiser)
+    private Sign.SignatureData signMagicLink(byte[] signData, BigInteger privateKeyOfOrganiser)
     {
         ECKeyPair ecKeyPair  = ECKeyPair.create(privateKeyOfOrganiser);
         //returns the v, r and s signature params
-        byte[] dropLeadingByte=new byte[linkData.length-1];
-        System.arraycopy(linkData, 1, dropLeadingByte, 0, linkData.length-1);
-        return Sign.signMessage(dropLeadingByte, ecKeyPair);
+        return Sign.signMessage(signData, ecKeyPair);
     }
-    private static byte[] encodeMessageForSpawning (
+    private static byte[] encodeLinkDataForSpawning (
             BigInteger priceInSzabo,
             BigInteger expiryTimestamp,
             BigInteger[] tickets,
@@ -96,6 +97,38 @@ public class MagicLinkToolDataModel {
         message.put(leadingZeros);
         message.put(priceInMicroWei);
         byte[] leadingZerosExpiry = new byte[4 - expiry.length];
+        message.put(leadingZerosExpiry);
+        message.put(expiry);
+        byte[] contract = hexStringToBytes(Numeric.cleanHexPrefix(contractAddress));
+        message.put(contract);
+        for(BigInteger ticket : tickets) {
+            //need to pad so that it is 32bytes
+            String paddedTicket = Numeric.toHexStringNoPrefixZeroPadded(ticket, 64);
+            byte[] ticketAsByteArray = hexStringToBytes(paddedTicket);
+            message.put(ticketAsByteArray);
+        }
+        return message.array();
+    }
+    private static byte[] encodeSignDataForSpawning (
+            BigInteger priceInSzabo,
+            BigInteger expiryTimestamp,
+            BigInteger[] tickets,
+            String contractAddress)
+    {
+        int byteLength=0;
+        BigInteger priceInWei = Convert.toWei(new BigDecimal(priceInSzabo), Convert.Unit.SZABO).toBigInteger();
+        byte[] priceInWeiByte = priceInWei.toByteArray();
+        byteLength+=32;//priceinwei
+        byte[] expiry = expiryTimestamp.toByteArray();
+        byteLength+=32;//expiry
+        byteLength+=20;//contract address
+        byteLength+=tickets.length*32;//tickets
+        ByteBuffer message = ByteBuffer.allocate(byteLength);
+        //message.put(leadingbytes);
+        byte[] leadingZeros = new byte[32 - priceInWeiByte.length];
+        message.put(leadingZeros);
+        message.put(priceInWeiByte);
+        byte[] leadingZerosExpiry = new byte[32 - expiry.length];
         message.put(leadingZerosExpiry);
         message.put(expiry);
         byte[] contract = hexStringToBytes(Numeric.cleanHexPrefix(contractAddress));
