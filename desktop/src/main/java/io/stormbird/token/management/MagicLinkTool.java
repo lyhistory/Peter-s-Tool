@@ -536,9 +536,9 @@ public class MagicLinkTool extends JFrame{
             }else {
                 JTextField textFieldInput;
                 textFieldInput = new JTextField();
-//                if(model.getLengthlimit()>0){
-//                    textFieldInput.setDocument(new JTextFieldLimit(model.getLengthlimit()));
-//                }
+                if(model.getLengthlimit()>0){
+                    textFieldInput.setDocument(new JTextFieldLimit(model.getLengthlimit()));
+                }
                 textFieldInput.setName(model.id);
                 textFieldInput.setEditable(enabled);
                 textFieldInput.setEnabled(enabled);
