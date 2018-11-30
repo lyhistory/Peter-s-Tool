@@ -62,6 +62,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class MagicLinkTool extends JFrame{
     public InputStream ticketXMLTemplate = getClass().getResourceAsStream("/MeetupContract.xml");
     public String ticketXMLFilePath = "./desktop/res/MeetupContract.xml";
+    public String ticketSignedXMLFilePath="./desktop/res/MeetupContract-signed.xml";;
     public String magicLinksCSVPath = "./desktop/res/magiclinks.csv";
 
     private JSplitPane mainSplitPane;
@@ -1023,10 +1024,12 @@ public class MagicLinkTool extends JFrame{
      * @param contractAddress
      */
     public void processContractXml(String networkid, String contractAddress){
+
         //step 1, create xml based on template
         XmlHelper.updateContractAddress(networkid,contractAddress,ticketXMLTemplate,ticketXMLFilePath);
         //step 2, sign
-
+        ComboBoxSimpleItem currentPrivateKeySelectedItem = (ComboBoxSimpleItem)comboBoxKeysList.getSelectedItem();
+        XmlHelper.signContractXML(currentPrivateKeySelectedItem.getValue(),ticketXMLFilePath,ticketSignedXMLFilePath);
         //step 3, upload
     }
 

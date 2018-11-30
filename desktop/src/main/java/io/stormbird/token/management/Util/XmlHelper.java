@@ -4,6 +4,7 @@ import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.ASN1StreamParser;
 import org.bouncycastle.asn1.DERBitString;
 import org.bouncycastle.asn1.DERSequence;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -22,9 +23,9 @@ import javax.xml.transform.stream.StreamResult;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.security.KeyPair;
-import java.security.PublicKey;
+import java.security.*;
 import java.security.interfaces.ECPublicKey;
+import java.security.spec.InvalidKeySpecException;
 
 public class XmlHelper {
     /**
@@ -79,7 +80,7 @@ public class XmlHelper {
         }
     }
 
-    public static void signContractXML(String privateKey,String ticketXMLFilePath){
+    public static void signContractXML(String privateKey,String ticketXMLFilePath,String ticketSignedXMLFilePath){
         DocumentBuilder dBuilder;
         Document xml=null;
         Transformer transformer=null;
@@ -87,8 +88,22 @@ public class XmlHelper {
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
             dbFactory.setNamespaceAware(true);
             dBuilder = dbFactory.newDocumentBuilder();
-            xml = dBuilder.parse(new File(ticketXMLFilePath));
+            xml = dBuilder.parse(ticketXMLFilePath);
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            transformer = transformerFactory.newTransformer();
+            FileHelper.createFileIfNotExists(ticketXMLFilePath);
 
+            xml.getDocumentElement().normalize(); // also good for parcel
+
+            final Element documentRoot = xml.getDocumentElement();
+            //Canonicalization transform
+//            final Transforms contentTransforms = new Transforms(xml);
+//            //TRANSFORM_ENVELOPED_SIGNATURE
+//            contentTransforms.addTransform("http://www.w3.org/2000/09/xmldsig#enveloped-signature");
+//            //TRANSFORM_C14N_EXCL_OMIT_COMMENTS
+//            contentTransforms.addTransform("http://www.w3.org/2001/10/xml-exc-c14n#");
+
+            Security.addProvider(new BouncyCastleProvider());
             ECKeyPair ecKeyPair = CryptoHelper.getECKeyPairFromPrivateKey(privateKey);
             KeyPair keyPair = CryptoHelper.generatePKCS8(ecKeyPair);
             PublicKey pk=keyPair.getPublic();
@@ -115,8 +130,28 @@ public class XmlHelper {
             PublicKey.appendChild(PublicKeyX);
             PublicKey.appendChild(PublicKeyY);
             ECKeyValue.appendChild(PublicKey);
-        }catch (Exception e){
+            //xml.getDocumentElement().appendChild(ECKeyValue);
+            documentRoot.insertBefore(ECKeyValue,documentRoot.getFirstChild());
+            DOMSource source = new DOMSource(xml);
+            StreamResult result = new StreamResult(new File(ticketSignedXMLFilePath));
+            transformer.transform(source, result);
 
+        } catch (ParserConfigurationException e) {
+            e.printStackTrace();
+        } catch (SAXException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (TransformerConfigurationException e) {
+            e.printStackTrace();
+        } catch (TransformerException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (NoSuchProviderException e) {
+            e.printStackTrace();
+        } catch (InvalidKeySpecException e) {
+            e.printStackTrace();
         }
     }
 }
