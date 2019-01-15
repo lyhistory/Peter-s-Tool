@@ -1,17 +1,10 @@
 package io.stormbird.token.tools;
 
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.ParserConfigurationException;
-
-import io.stormbird.token.entity.FunctionDefinition;
-import io.stormbird.token.entity.NonFungibleToken;
 import org.w3c.dom.Document;
-import org.w3c.dom.NodeList;
-import org.w3c.dom.Node;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
@@ -20,6 +13,11 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import io.stormbird.token.entity.FunctionDefinition;
+import io.stormbird.token.entity.NonFungibleToken;
 
 public class TokenDefinition {
     protected Document xml;
@@ -27,8 +25,9 @@ public class TokenDefinition {
     protected Locale locale;
     public Map<String, Integer> addresses = new HashMap<>();
     public Map<String, FunctionDefinition> functions = new ConcurrentHashMap<>();
+    public Map<String, Map<String, String>> attributeSets = new ConcurrentHashMap<>(); //TODO: add language, in case user changes language during operation - see Weiwu's comment further down
 
-    private boolean legacyFormat;
+    private static final String ATTESTATION = "http://attestation.id/ns/tbml";
 
     /* the following are incorrect, waiting to be further improved
      with suitable XML, because none of these String typed class variables
@@ -76,6 +75,7 @@ public class TokenDefinition {
 
         public AttributeType(Element attr) {
             name = getLocalisedString(attr,"name");
+            if (name == null) return;
             id = attr.getAttribute("id");
             try {
                 switch (attr.getAttribute("syntax")) { // We don't validate syntax here; schema does it.
@@ -110,14 +110,29 @@ public class TokenDefinition {
                 syntax = Syntax.DirectoryString; // 1.3.6.1.4.1.1466.115.121.1.15
             }
             bitmask = null;
-            NodeList nList = attr.getElementsByTagNameNS("http://attestation.id/ns/tbml", "origin");
-            for (int i = 0; i < nList.getLength(); i++) {
-                    Element origin = (Element) nList.item(i);
+            for(Node node=attr.getFirstChild();
+                node!=null; node=node.getNextSibling()){
+                if (node.getNodeType() == Node.ELEMENT_NODE) {
+                    System.out.println("\nFound a name field: " + node.getNodeName());
+                    Element origin = (Element) node;
+                    String label = node.getLocalName();
+                    switch (label)
+                    {
+                        case "features":
+                            //look for function
+                            break;
+                        case "contracts":
+                            System.out.println(node.getAttributes().toString());
+                            break;
+                        case "appearance":
+
+                            break;
+                    }
                     switch(origin.getAttribute("contract").toLowerCase()) {
                         case "holding-contract":
                             as = As.Mapping;
                             // TODO: Syntax is not checked
-                            getFunctions(origin);
+                            //getFunctions(origin);
                             break;
                         default:
                             break;
@@ -130,8 +145,8 @@ public class TokenDefinition {
                             as = As.UTF8;
                             break;
                         case "mapping":
-                            // the case <mapping> missing should be prevented by XSD.
                             as = As.Mapping;
+                            // TODO: Syntax is not checked
                             members = new ConcurrentHashMap<>();
                             populate(origin);
                             break;
@@ -141,6 +156,7 @@ public class TokenDefinition {
                     if (origin.hasAttribute("bitmask")) {
                         bitmask = new BigInteger(origin.getAttribute("bitmask"), 16);
                     }
+                }
             }
             if (bitmask != null ) {
                 while (bitmask.mod(BigInteger.ONE.shiftLeft(++bitshift)).equals(BigInteger.ZERO)) ; // !!
@@ -151,7 +167,7 @@ public class TokenDefinition {
 
         private void populate(Element mapping) {
             Element option;
-            NodeList nList = mapping.getElementsByTagNameNS("http://attestation.id/ns/tbml", "option");
+            NodeList nList = mapping.getElementsByTagNameNS(ATTESTATION, "option");
             for (int i = 0; i < nList.getLength(); i++) {
                 option = (Element) nList.item(i);
                 members.put(new BigInteger(option.getAttribute("key")), getLocalisedString(option, "value"));
@@ -182,72 +198,184 @@ public class TokenDefinition {
             }
         }
 
-        public String toString(BigInteger data) throws UnsupportedEncodingException {
+        /**
+         * Converts bitshifted/masked token numeric data into corresponding string.
+         * eg. Attr is 'venue'; choices are "1" -> "Kaliningrad Stadium", "2" -> "Volgograd Arena" etc.
+         * NB 'time' is Unix EPOCH, which is also a mapping.
+         * Since the value may not have a corresponding mapping, but is a valid time we should still return the time value
+         * and interpret it as a local time
+         *
+         * Also - some NF tokens which share a contract with others (eg World Cup, Meetup invites) will have mappings
+         * which intentionally have zero value - eg 'Match' has no lookup value for a meeting. Returning null is a guide for the
+         * token layout not to show the value.
+         *
+         * This will become less relevant once the IFrame system is in place - each token appearance will be defined explicitly.
+         * However it may be necessary for a default display of token attributes for ease of use while potential
+         * users become acquainted with the system.
+         *
+         * @param data
+         * @return
+         * @throws UnsupportedEncodingException
+         */
+        public String toString(BigInteger data) throws UnsupportedEncodingException
+        {
             // TODO: in all cases other than UTF8, syntax should be checked
-                if (as == As.UTF8) {
+            switch (as)
+            {
+                case UTF8:
                     return new String(data.toByteArray(), "UTF8");
-                } else if(as == As.Unsigned){
+
+                case Unsigned:
                     return data.toString();
-                } else if(as == As.Mapping){
+
+                case Mapping:
                     // members might be null, but it is better to throw up ( NullPointerException )
                     // than silently ignore
-                    if (members.containsKey(data)) {
+                    // JB: Existing contracts and tokens throw this error. The wallet 'crashes' each time existing tokens are opened
+                    // due to assumptions made with extra tickets (ie null member is assumed to return null and not display that element).
+                    if (members.containsKey(data))
+                    {
                         return members.get(data);
-                    } else {
-                        throw new NullPointerException("Key " + data.toString() + " can't be mapped.");
                     }
-                }
-                throw new NullPointerException("Missing valid 'as' attribute");
+                    else if (syntax == Syntax.GeneralizedTime)
+                    {
+                        //This is a time entry but without a localised mapped entry. Return the EPOCH time.
+                        return data.toString(10);
+                    }
+                    else
+                    {
+                        return null; // have to revert to this behaviour due to values being zero when tokens are created
+                        //refer to 'AlphaWallet meetup tickets' where 'Match' mapping is null but for FIFA is not.
+                        //throw new NullPointerException("Key " + data.toString() + " can't be mapped.");
+                    }
+                default:
+                    throw new NullPointerException("Missing valid 'as' attribute");
+            }
         }
     }
 
-    // Legacy function to parse older format XML.
-    // TODO: Remove once this is no longer needed - once the new parser can successfully not crash with older formats.
-    String getLocalisedName(Element nameContainer,String targetName) {
-        Element name = null;
-        Locale currentNodeLang;
-        if (nameContainer == null)
+    private FunctionDefinition getFunction(Node mapping) {
+        Element option;
+        FunctionDefinition fd = new FunctionDefinition();
+        if (mapping.getAttributes().getLength() > 0)
         {
-            return " ";
+            Node attr = mapping.getAttributes().getNamedItem("name");
+            if (attr != null)
+            {
+                fd.method = attr.getTextContent();
+                fd.syntax = Syntax.Integer;
+            }
         }
-        for(Node node=nameContainer.getLastChild();
-            node!=null; node=node.getPreviousSibling()){
-            if (node.getNodeType() == Node.ELEMENT_NODE && node.getNodeName().equals(targetName)) {
-                // System.out.println("\nFound a name field: " + node.getNodeName());
-                name = (Element) node;
-                currentNodeLang = new Locale(name.getAttribute("lang"));
-                if (currentNodeLang.getLanguage().equals(locale.getLanguage())) {
-                    return name.getTextContent();
+
+        for(Node child=mapping.getFirstChild(); child!=null; child=child.getNextSibling())
+        {
+            if (child.getNodeType() == Node.ELEMENT_NODE)
+            {
+                option = (Element) child;
+                String type = child.getLocalName();
+                String functionName = option.getAttribute("name");
+                //TODO: Get child elements; inputs and input param keys
+
+                switch (type)
+                {
+                    case "inputs":
+                        //TODO Read inputs from child node
+                        //String inputSpec = getChildElement(child, );
+                        break;
+                    default:
+                        break;
                 }
             }
         }
-        return name != null ? name.getTextContent() : " "; /* Should be the first occurrence of <name> */
+        return fd;
     }
 
     /* for many occurance of the same tag, return the text content of the one in user's current language */
     // FIXME: this function will break if there are nested <tagName> in the nameContainer
     String getLocalisedString(Element nameContainer, String tagName) {
-        if (legacyFormat)
-        {
-            return getLocalisedName(nameContainer, tagName);
-        }
-        NodeList nList = nameContainer.getElementsByTagNameNS("http://attestation.id/ns/tbml", tagName);
+        NodeList nList = nameContainer.getElementsByTagNameNS(ATTESTATION, tagName);
         Element name;
         for (int i = 0; i < nList.getLength(); i++) {
             name = (Element) nList.item(i);
-            String currentNodeLang = (new Locale(name.getAttribute("lang"))).getLanguage();
-            if (currentNodeLang.equals(locale.getLanguage())) {
+            String langAttr = getLocalisationLang(name);
+            if (langAttr.equals(locale.getLanguage())) {
                 return name.getTextContent();
             }
         }
         /* no matching language found. return the first tag's content */
         name = (Element) nList.item(0);
         // TODO: catch the indice out of bound exception and throw it again suggesting dev to check schema
-        if (name == null)
+        if (name != null) return name.getTextContent();
+        else return null;
+    }
+
+    private String getLocalisationLang(Element name)
+    {
+        if (name.hasAttributes())
         {
-            System.out.println("*** Developer warning - error in XML format at tag " + nameContainer.getLocalName() + " ***");
+            for (int i = 0; i < name.getAttributes().getLength(); i++)
+            {
+                Node thisAttr = name.getAttributes().item(i);
+                if (thisAttr.getLocalName().equals("lang"))
+                {
+                    return thisAttr.getTextContent();
+                }
+            }
         }
-        return name != null ? name.getTextContent() : " ";
+
+        return "";
+    }
+
+    Node getLocalisedContent(Node container, String tagName)
+    {
+        NodeList nList = container.getChildNodes();
+        Node node;
+        Node fallback = null;
+
+        for (int i = 0; i < nList.getLength(); i++)
+        {
+            node = nList.item(i);
+            switch (node.getNodeType())
+            {
+                case Node.TEXT_NODE:
+                    break;
+                case Node.ELEMENT_NODE:
+                    fallback = node;
+                    if (node.getLocalName().equals(tagName))
+                    {
+                        Element element = (Element)node;
+                        String currentNodeLang = null;
+                        if (node.hasAttributes())
+                        {
+                            Node attr = node.getAttributes().item(0);
+                            if (attr.getLocalName().equals("lang"))
+                            {
+                                currentNodeLang = attr.getTextContent();
+                            }
+                        }
+                        if (currentNodeLang == null || currentNodeLang.length() == 0) currentNodeLang = (new Locale(element.getAttribute("lang"))).getLanguage();
+                        if (currentNodeLang.equals(locale.getLanguage()))
+                        {
+                            return node;
+                        }
+                    }
+                    break;
+            }
+        }
+
+        return fallback;
+    }
+
+    private String getTextContent(Element element)
+    {
+        if (element.getChildNodes().getLength() > 0 && element.getChildNodes().item(0).getNodeType() == Node.TEXT_NODE)
+        {
+            return element.getChildNodes().item(0).getTextContent();
+        }
+        else
+        {
+            return null;
+        }
     }
 
     public TokenDefinition(InputStream xmlAsset, Locale locale) throws IOException, SAXException{
@@ -268,32 +396,60 @@ public class TokenDefinition {
         }
         Document xml = dBuilder.parse(xmlAsset);
         xml.getDocumentElement().normalize(); // good for parcel, bad for signature verification. JB likes it that way. -weiwu
-        NodeList nList = xml.getElementsByTagNameNS("http://attestation.id/ns/tbml", "attribute-type");
+        NodeList nList;
+        nList = xml.getElementsByTagNameNS(ATTESTATION, "token");
+
         if (nList.getLength() == 0)
         {
-            nList = xml.getElementsByTagName("attribute-type");
-            legacyFormat = true;
+            System.out.println("Legacy XML format - no longer supported");
+            return;
         }
-        else
+
+        //TODO: Needs to be namespace aware
+        CrawlAttrs(nList);
+
+        extractFeatureTag(xml);
+        extractContractTag(xml);
+        extractSignedInfo(xml);
+
+        //TODO: 'appearance' in XML needs to have an HTML attribute
+        extractTags(xml, "appearance", true);
+        extractTags(xml, "features", false);
+    }
+
+    private void CrawlAttrs(NodeList nList)
+    {
+        //Node impl = nList.item(i);
+        //NodeList cNodes = impl.getChildNodes();
+        for (int j = 0; j < nList.getLength(); j++)
         {
-            legacyFormat = false;
-        }
-        for (int i = 0; i < nList.getLength(); i++) {
-            AttributeType attr = new AttributeType((Element) nList.item(i));
-            if (attr.bitmask != null) {// has <origin> which is from bitmask
-                attributeTypes.put(attr.id, attr);
-            } // TODO: take care of attributeTypes whose value does not originate from bitmask!
-            else if (attr.function != null) {
-                FunctionDefinition fd = new FunctionDefinition(); //TODO: Expand FunctionDefinition to encompass parameters and special strings (eg TokenID)
-                fd.method = attr.function;
-                fd.syntax = attr.syntax;
-                functions.put(attr.id, fd);
+            Node n = nList.item(j);
+            if (n.getPrefix() != null)
+            {
+                processAttrs(n);
+            }
+
+            if (n.hasChildNodes())
+            {
+                CrawlAttrs(n.getChildNodes());
             }
         }
-        extractFeatureTag(xml);
-        if (legacyFormat) extractLegacyContractTag(xml);
-        else extractContractTag(xml);
-        extractSignedInfo(xml);
+    }
+
+    private void processAttrs(Node n)
+    {
+        AttributeType attr = new AttributeType((Element) n);
+        if (attr.bitmask != null)
+        {// has <origin> which is from bitmask
+            attributeTypes.put(attr.id, attr);
+        } // TODO: take care of attributeTypes whose value does not originate from bitmask!
+        else if (attr.function != null)
+        {
+            FunctionDefinition fd = new FunctionDefinition();
+            fd.method = attr.function;
+            fd.syntax = attr.syntax;
+            functions.put(attr.id, fd);
+        }
     }
 
     private void extractSignedInfo(Document xml) {
@@ -343,17 +499,17 @@ public class TokenDefinition {
     private void extractFeatureTag(Document xml)
     {
         NodeList l;
-        NodeList nList = xml.getElementsByTagNameNS("http://attestation.id/ns/tbml", "feature");
+        NodeList nList = xml.getElementsByTagNameNS(ATTESTATION, "feature");
         for (int i = 0; i < nList.getLength(); i++) {
             Element feature = (Element) nList.item(i);
             switch (feature.getAttribute("type")) {
                 case "feemaster":
-                    l = feature.getElementsByTagNameNS("http://attestation.id/ns/tbml", "feemaster");
+                    l = feature.getElementsByTagNameNS(ATTESTATION, "feemaster");
                     for (int j = 0; j < l.getLength(); j++)
                         feemasterAPI = l.item(j).getTextContent();
                     break;
                 case "market-queue":
-                    l = feature.getElementsByTagNameNS("http://attestation.id/ns/tbml", "gateway");
+                    l = feature.getElementsByTagNameNS(ATTESTATION, "gateway");
                     for (int j = 0; j < l.getLength(); j++)
                         marketQueueAPI = l.item(j).getTextContent();
                     break;
@@ -367,7 +523,7 @@ public class TokenDefinition {
     {
         String nameDefault = null;
         String nameEnglish = null;
-        NodeList nList = xml.getElementsByTagNameNS("http://attestation.id/ns/tbml", "contract");
+        NodeList nList = xml.getElementsByTagNameNS(ATTESTATION, "contract");
         /* we allow multiple contracts, e.g. for issuing asset and for
          * proxy usage. but for now we only deal with the first */
         Element contract = (Element) nList.item(0);
@@ -379,52 +535,170 @@ public class TokenDefinition {
         /*if hit NullPointerException in the next statement, then XML file
          * must be missing <contract> elements */
         /* TODO: select the contract of type "holding_contract" */
-        nList = contract.getElementsByTagNameNS("http://attestation.id/ns/tbml", "address");
-        for (int i = 0; i < nList.getLength(); i++)
+        nList = contract.getElementsByTagNameNS(ATTESTATION, "address");
+        for (int addrIndex = 0; addrIndex < nList.getLength(); addrIndex++)
         {
-            Element address = (Element) nList.item(i);
-            String networkElement = address.getAttribute("network");
-            if (networkElement.length() < 1) networkElement = "1"; //default to mainnet
-            Integer networkId = Integer.parseInt(networkElement);
-            addresses.put(address.getTextContent().toLowerCase(), networkId);
-        }
-
-    }
-
-    private void extractLegacyContractTag(Document xml)
-    {
-        String nameDefault = null;
-        String nameEnglish = null;
-        NodeList nList = xml.getElementsByTagName("contract");
-        /* we allow multiple contracts, e.g. for issuing asset and for
-         * proxy usage. but for now we only deal with the first */
-        Element contract = (Element) nList.item(0);
-
-        /* if there is no token name in <contract> this breaks;
-         * token name shouldn't be in <contract> anyway, re-design pending */
-        tokenName = getLocalisedName(contract,"name");
-
-        /*if hit NullPointerException in the next statement, then XML file
-         * must be missing <contract> elements */
-        /* TODO: select the contract of type "holding_contract" */
-        for(Node nNode = nList.item(0).getFirstChild(); nNode!=null; nNode = nNode.getNextSibling()){
-            if (nNode.getNodeType() == Node.ELEMENT_NODE) {
-                Element eElement = ((Element) nNode);
-                if (eElement.getTagName().equals("address")) {
-                    String networkElement = eElement.getAttribute("network");
-                    if (networkElement.length() < 1) networkElement = "1"; //default to mainnet
-                    Integer networkId = Integer.parseInt(networkElement);
-                    addresses.put(nNode.getTextContent().toLowerCase(), networkId);
+            Node node = nList.item(addrIndex);
+            if (node.getNodeType() == Node.ELEMENT_NODE)
+            {
+                int network = networkId;
+                if (node.hasAttributes() && node.getAttributes().item(0).getLocalName().equals("network"))
+                {
+                    String networkStr = node.getAttributes().item(0).getNodeValue();
+                    network = Integer.parseInt(networkStr);
                 }
-                /* if there is no token name in <contract> this breaks;
-                 * token name shouldn't be in <contract> anyway, re-design pending */
-                if (eElement.getTagName().equals("name")) {
-                    if (eElement.getAttribute("lang").equals(locale.getLanguage())) {
-                        tokenName = eElement.getTextContent();
+
+                for (int i = 0; i < node.getChildNodes().getLength(); i++)
+                {
+                    Node address = node.getChildNodes().item(i);
+                    if (address.getNodeType() == Node.TEXT_NODE)
+                    {
+                        addresses.put(address.getTextContent().toLowerCase(), network);
                     }
                 }
             }
         }
+    }
+
+    private void extractTags(Document xml, String localName, boolean isHTML)
+    {
+        NodeList nList = xml.getElementsByTagNameNS(ATTESTATION, localName);
+        Element element = (Element) nList.item(0);
+
+        if (element != null)
+        {
+            Map<String, String> attributeSet = new ConcurrentHashMap<>();
+            attributeSets.put(localName, attributeSet);
+
+            //go through each child in this element looking for tags
+            for (int i = 0; i < element.getChildNodes().getLength(); i++)
+            {
+                Node node = element.getChildNodes().item(i);
+                switch (node.getNodeType())
+                {
+                    case Node.ATTRIBUTE_NODE:
+                        System.out.println(node.getAttributes().toString());
+                        break;
+                    case Node.ELEMENT_NODE:
+                        String nodeName = node.getLocalName();
+                        if (attributeSet.containsKey(nodeName))
+                            continue;
+                        Node content = getLocalisedContent(element, nodeName);
+                        if (content != null)
+                        {
+                            String contentString;
+                            if (isHTML)
+                            {
+                                contentString = getHTMLContent(content);
+                                attributeSet.put(nodeName, contentString);
+                            }
+                            else
+                                getContent(content);
+                        }
+                        break;
+                    case Node.TEXT_NODE:
+                        System.out.println(node.getTextContent());
+                        break;
+                }
+            }
+        }
+    }
+
+    private String getHTMLContent(Node content)
+    {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < content.getChildNodes().getLength(); i++)
+        {
+            Node child = content.getChildNodes().item(i);
+            switch (child.getNodeType())
+            {
+                case Node.TEXT_NODE:
+                    String parsed = child.getTextContent().replace("\u2019", "&#x2019;");
+                    sb.append(parsed);
+                    break;
+                case Node.ELEMENT_NODE:
+                    if (child.getLocalName().equals("iframe")) continue;
+                    sb.append("<");
+                    sb.append(child.getLocalName());
+                    sb.append(htmlAttributes(child));
+                    sb.append(">");
+                    sb.append(getHTMLContent(child));
+                    sb.append("</");
+                    sb.append(child.getLocalName());
+                    sb.append(">");
+                    break;
+                case Node.COMMENT_NODE:
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        return sb.toString();
+    }
+
+    private void getContent(Node content)
+    {
+        switch (content.getLocalName())
+        {
+            case "action":
+                handleFunction(content);
+                break;
+            case "contract":
+                //handleContract
+                break;
+        }
+    }
+
+    private void handleFunction(Node content)
+    {
+        String functionName = "";
+        for (int i = 0; i < content.getChildNodes().getLength(); i++)
+        {
+            Node child = content.getChildNodes().item(i);
+            switch (child.getNodeType())
+            {
+                case Node.TEXT_NODE:
+                    break;
+                case Node.ELEMENT_NODE:
+                    switch (child.getLocalName())
+                    {
+                        case "name":
+                            functionName = getHTMLContent(child);
+                            break;
+                        case "function":
+                            FunctionDefinition fd = getFunction(child);
+                            if (fd != null)
+                            {
+                                functions.put(functionName, fd);
+                            }
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    private String htmlAttributes(Node attribute)
+    {
+        StringBuilder sb = new StringBuilder();
+        if (attribute.hasAttributes())
+        {
+            for (int i = 0; i < attribute.getAttributes().getLength(); i++)
+            {
+                Node node = attribute.getAttributes().item(i);
+                sb.append(" ");
+                sb.append(node.getLocalName());
+                sb.append("=\"");
+                sb.append(node.getTextContent());
+                sb.append("\"");
+            }
+        }
+
+        return sb.toString();
     }
 
     /* take a token ID in byte-32, find all the fields in it and call back
@@ -442,6 +716,24 @@ public class TokenDefinition {
                 token.setAttribute(attrtype.id,
                         new NonFungibleToken.Attribute(attrtype.id, attrtype.name, val, "unsupported encoding"));
             }
+        }
+    }
+
+    /**
+     * Check for 'appearance' attribute set
+     * @param tag
+     * @return
+     */
+    public String getAppearance(String tag)
+    {
+        Map<String, String> appearanceSet = attributeSets.get("appearance");
+        if (appearanceSet != null)
+        {
+            return appearanceSet.get(tag);
+        }
+        else
+        {
+            return "";
         }
     }
 }

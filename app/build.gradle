@@ -37,8 +37,8 @@ android {
         applicationId "io.stormbird.wallet"
         minSdkVersion 18
         targetSdkVersion 28
-        versionCode 21
-        versionName "1.0.15"
+        versionCode 29
+        versionName "1.31.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         multiDexEnabled = true
 
@@ -100,7 +100,7 @@ dependencies {
     // WARNING!  users google gms summarily, like immune systems cleansing infections
     // WARNING! WARNING!  WARNING!  WARNING!  WARNING!  WARNING!  WARNING!  WARNING! 
 
-    // Etherium client
+    // Ethereum client
     implementation "org.web3j:core:$project.web3jVersion"
     implementation "org.ethereum:geth:$project.gethVersion"
 
@@ -113,12 +113,12 @@ dependencies {
     implementation "com.squareup.picasso:picasso:$project.picassoVersion"
     implementation 'android.arch.lifecycle:runtime:1.1.1'
     implementation 'android.arch.lifecycle:extensions:1.1.1'
+    //noinspection GradleCompatible
     implementation "com.android.support:appcompat-v7:$project.supportVersion"
     implementation "com.android.support:design:$project.supportVersion"
     implementation "com.android.support:support-vector-drawable:$project.supportVersion"
     implementation "com.android.support:recyclerview-v7:$project.supportVersion"
     implementation "com.android.support:gridlayout-v7:$project.supportVersion"
-    //implementation 'com.android.support:multidex-instrumentation:1.0.3'
 
     // Bar code scanning
     implementation 'com.journeyapps:zxing-android-embedded:3.6.0'
@@ -160,15 +160,20 @@ dependencies {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
 
-    // Fabric
-    implementation('com.crashlytics.sdk.android:crashlytics:2.9.5@aar') {
-        transitive = true
-    }
+    implementation 'com.crashlytics.sdk.android:crashlytics:2.9.7'
+
+    implementation 'com.google.firebase:firebase-core:16.0.6'
+    implementation 'com.google.firebase:firebase-messaging:17.3.4'
 
     // PW
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation project(':tn')
+
+    //Base SDK
+    implementation 'com.amazonaws:aws-android-sdk-sns:2.2.8'
 }
 
 // WARNING WARNING WARNING
 // don't add any additional things here without first search "China" in this file
+
+apply plugin: 'com.google.gms.google-services'

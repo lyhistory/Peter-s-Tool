@@ -9,6 +9,7 @@ public abstract class C {
     public static final String ETHEREUM_NETWORK_NAME = "Ethereum";
     public static final String CLASSIC_NETWORK_NAME = "Ethereum Classic";
     public static final String POA_NETWORK_NAME = "POA Network";
+    public static final String XDAI_NETWORK_NAME = "XDAI Network";
     public static final String KOVAN_NETWORK_NAME = "Kovan (Test)";
     public static final String ROPSTEN_NETWORK_NAME = "Ropsten (Test)";
     public static final String SOKOL_NETWORK_NAME = "Sokol (Test)";
@@ -19,6 +20,7 @@ public abstract class C {
 
     public static final String USD_SYMBOL = "$";
     public static final String ETH_SYMBOL = "ETH";
+    public static final String xDAI_SYMBOL = "xDAI";
     public static final String POA_SYMBOL = "POA";
     public static final String ETC_SYMBOL = "ETC";
 
@@ -51,6 +53,7 @@ public abstract class C {
     public static final String EXTRA_WEB3TRANSACTION = "WEB3_TRANSACTION";
     public static final String EXTRA_NETWORK_NAME = "NETWORK_NAME";
     public static final String EXTRA_NETWORK_MAINNET = "NETWORK_MAINNET";
+    public static final String EXTRA_ENS_DETAILS = "ENS_DETAILS";
 
     public static final String PRUNE_ACTIVITY =
             "io.stormbird.wallet.PRUNE_ACTIVITY";
@@ -75,6 +78,8 @@ public abstract class C {
     public static final String DEFAULT_GAS_PRICE = "30000000000";
     public static final String DEFAULT_GAS_LIMIT = "125000";
     public static final String DEFAULT_GAS_LIMIT_FOR_TOKENS = "144000";
+    public static final String DEFAULT_GAS_LIMIT_FOR_NONFUNGIBLE_TOKENS = "432000"; //NFT's typically require more gas
+    public static final long GAS_PER_BYTE = 300; //from experimentation
     public static final long GAS_LIMIT_MIN = 21000L;
     public static final long GAS_LIMIT_MAX = 300000L;
     public static final long GAS_PRICE_MIN = 1000000000L;
@@ -113,13 +118,13 @@ public abstract class C {
         String FROM_SETTINGS = "from_settings";
     }
 
-    public static final String ETH_RPC_URL = "https://mainnet.infura.io/llyrtzQ3YhkdESt2Fzrk";
     public static final String DAPP_LASTURL_KEY = "dappURL";
     public static final String DAPP_BROWSER_HISTORY = "dappBrowserHistory";
     public static final String DAPP_BROWSER_BOOKMARKS = "dappBrowserBookmarks";
     public static final String DAPP_DEFAULT_URL = "https://www.stateofthedapps.com/";
 
     public static final String ENS_SCAN_BLOCK = "ens_check_block";
+    public static final String ENS_HISTORY = "ensHistory";
 
     public enum TokenStatus {
         DEFAULT, PENDING, INCOMPLETE

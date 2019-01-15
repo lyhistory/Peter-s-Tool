@@ -17,6 +17,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.animation.AnimationUtils;
 import android.view.inputmethod.InputMethodManager;
+import android.webkit.WebView;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -26,6 +28,8 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import io.stormbird.wallet.entity.ENSCallback;
+import io.stormbird.wallet.ui.widget.entity.ENSHandler;
 import org.web3j.abi.datatypes.Address;
 
 import java.math.BigDecimal;
@@ -42,6 +46,8 @@ import io.stormbird.wallet.entity.Token;
 import io.stormbird.wallet.entity.TokenInfo;
 import io.stormbird.wallet.entity.Wallet;
 import io.stormbird.wallet.router.EthereumInfoRouter;
+import io.stormbird.wallet.ui.widget.adapter.AutoCompleteUrlAdapter;
+import io.stormbird.wallet.ui.widget.entity.ItemClickListener;
 import io.stormbird.wallet.ui.zxing.FullScannerFragment;
 import io.stormbird.wallet.ui.zxing.QRScanningActivity;
 import io.stormbird.wallet.util.BalanceUtils;
@@ -54,8 +60,8 @@ import io.stormbird.wallet.widget.AWalletAlertDialog;
 
 import static io.stormbird.wallet.C.Key.WALLET;
 
-public class SendActivity extends BaseActivity implements Runnable {
-    public  static final int ENS_RESOLVE_DELAY = 1500; //In milliseconds
+public class SendActivity extends BaseActivity implements Runnable, ItemClickListener
+{
     private static final String KEY_ADDRESS = "key_address";
     private static final int BARCODE_READER_REQUEST_CODE = 1;
 
@@ -77,7 +83,7 @@ public class SendActivity extends BaseActivity implements Runnable {
     Button startTransferButton;
     Button copyAddressButton;
     EditText amountEditText;
-    EditText toAddressEditText;
+    AutoCompleteTextView toAddressEditText;
     ImageView qrImageView;
     ImageButton scanQrImageView;
     TextView toAddressError;
@@ -85,9 +91,8 @@ public class SendActivity extends BaseActivity implements Runnable {
     TextView myAddressText;
     TextView amountSymbolText;
     AWalletAlertDialog dialog;
-    LinearLayout layoutENSResolve;
-    TextView textENS;
 
+    private ENSHandler ensHandler;
     Handler handler;
 
     //Token
@@ -120,14 +125,12 @@ public class SendActivity extends BaseActivity implements Runnable {
         sendingTokens = getIntent().getBooleanExtra(C.EXTRA_SENDING_TOKENS, false);
         wallet = getIntent().getParcelableExtra(WALLET);
         token = getIntent().getParcelableExtra(C.EXTRA_TOKEN_ID);
-        viewModel.ensResolve().observe(this, this::onENSSuccess);
-        viewModel.ensFail().observe(this, this::hideENS);
-
         myAddress = wallet.address;
 
         setupTokenContent();
 
         initViews();
+        setupAddressEditField();
 
         if (token.addressMatches(myAddress))
         {
@@ -141,16 +144,27 @@ public class SendActivity extends BaseActivity implements Runnable {
         }
     }
 
-    private void onENSSuccess(String address)
+    private void setupAddressEditField()
     {
-        layoutENSResolve.setVisibility(View.VISIBLE);
-        textENS.setText(address);
-        KeyboardUtils.hideKeyboard(getCurrentFocus());
-    }
+        AutoCompleteUrlAdapter adapterUrl = new AutoCompleteUrlAdapter(getApplicationContext(), C.ENS_HISTORY);
+        adapterUrl.setListener(this);
+        ENSCallback ensCallback = new ENSCallback()
+        {
+            @Override
+            public void ENSComplete()
+            {
+                onStartTransfer();
+            }
 
-    private void hideENS(Boolean dummy)
-    {
-        layoutENSResolve.setVisibility(View.GONE);
+            @Override
+            public void ENSCheck(String name)
+            {
+                viewModel.checkENSAddress(name);
+            }
+        };
+        ensHandler = new ENSHandler(this, handler, adapterUrl, this, ensCallback);
+        viewModel.ensResolve().observe(this, ensHandler::onENSSuccess);
+        viewModel.ensFail().observe(this, ensHandler::hideENS);
     }
 
     private void onNewEthPrice(Double ethPrice)
@@ -193,8 +207,6 @@ public class SendActivity extends BaseActivity implements Runnable {
         ethDetailLayout = findViewById(R.id.layout_eth_detail);
         priceUSD = findViewById(R.id.textImportPriceUSD);
         priceUSDLayout = findViewById(R.id.layout_usd_price);
-        layoutENSResolve = findViewById(R.id.layout_ens);
-        textENS = findViewById(R.id.text_ens_resolve);
 
         startTransferButton = findViewById(R.id.button_start_transfer);
         startTransferButton.setOnClickListener(v -> onStartTransfer());
@@ -230,30 +242,6 @@ public class SendActivity extends BaseActivity implements Runnable {
         });
 
         toAddressEditText = findViewById(R.id.edit_to_address);
-        toAddressEditText.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                toAddressError.setVisibility(View.GONE);
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                //reset address check timer
-                textENS.setText("");
-                checkAddress();
-            }
-        });
-    }
-
-    private void checkAddress()
-    {
-        handler.removeCallbacks(this);
-        handler.postDelayed(this, ENS_RESOLVE_DELAY);
     }
 
     private void copyAddress()
@@ -279,19 +267,13 @@ public class SendActivity extends BaseActivity implements Runnable {
         }
 
         toAddressError.setVisibility(View.GONE);
-        String to = toAddressEditText.getText().toString();
-        if (!isAddressValid(to)) to = textENS.getText().toString();
-        if (!isAddressValid(to))
-        {
-            toAddressError.setVisibility(View.VISIBLE);
-            toAddressError.setText(getString(R.string.error_invalid_address));
-            isValid = false;
-        }
+        String to = ensHandler.getAddressFromEditView();
+        if (to == null) return;
 
         if (isValid)
         {
             BigInteger amountInSubunits = BalanceUtils.baseToSubunit(amountEditText.getText().toString(), decimals);
-            viewModel.openConfirmation(this, to, amountInSubunits, contractAddress, decimals, symbol, sendingTokens);
+            viewModel.openConfirmation(this, to, amountInSubunits, contractAddress, decimals, symbol, sendingTokens, ensHandler.getEnsName());
         }
     }
 
@@ -380,15 +362,6 @@ public class SendActivity extends BaseActivity implements Runnable {
         handler.removeCallbacksAndMessages(null);
     }
 
-    boolean isAddressValid(String address) {
-        try {
-            new Address(address);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
     boolean isValidAmount(String eth) {
         try {
             String wei = BalanceUtils.EthToWei(eth);
@@ -415,7 +388,8 @@ public class SendActivity extends BaseActivity implements Runnable {
         }
     }
 
-    public void setupTokenContent() { /* This method is copied from Token.java */
+    public void setupTokenContent()
+    {
         balanceEth = findViewById(R.id.balance_eth);
         arrayBalance = findViewById(R.id.balanceArray);
         symbolText = findViewById(R.id.symbol);
@@ -434,6 +408,27 @@ public class SendActivity extends BaseActivity implements Runnable {
 
         balanceEth.setVisibility(View.VISIBLE);
         arrayBalance.setVisibility(View.GONE);
+
+        if (viewModel.hasIFrame(token.getAddress()))
+        {
+            addTokenPage();
+        }
+    }
+
+    private void addTokenPage()
+    {
+        LinearLayout viewWrapper = findViewById(R.id.layout_iframe);
+        try
+        {
+            WebView iFrame = findViewById(R.id.iframe);
+            String tokenData = viewModel.getTokenData(token.getAddress());
+            iFrame.loadData(tokenData, "text/html", "UTF-8");
+            viewWrapper.setVisibility(View.VISIBLE);
+        }
+        catch (Exception e)
+        {
+            viewWrapper.setVisibility(View.GONE);
+        }
     }
 
     public static String getUsdString(double usdPrice)
@@ -446,11 +441,12 @@ public class SendActivity extends BaseActivity implements Runnable {
     @Override
     public void run()
     {
-        //address update delay check
-        final String to = toAddressEditText.getText().toString();
-        if (to.length() > 0 && to.charAt(0) == '@')
-        {
-            viewModel.checkENSAddress(to);
-        }
+        ensHandler.checkENS();
+    }
+
+    @Override
+    public void onItemClick(String url)
+    {
+        ensHandler.handleHistoryItemClick(url);
     }
 }

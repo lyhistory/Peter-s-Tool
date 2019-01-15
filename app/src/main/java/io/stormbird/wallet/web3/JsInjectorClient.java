@@ -15,6 +15,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import io.stormbird.wallet.R;
+import io.stormbird.wallet.repository.EthereumNetworkRepository;
 import io.stormbird.wallet.web3.entity.Address;
 import okhttp3.Headers;
 import okhttp3.HttpUrl;
@@ -35,7 +36,8 @@ class JsInjectorClient {
 
     private int chainId = 1;
     private Address walletAddress;
-    private String rpcUrl = "https://mainnet.infura.io/llyrtzQ3YhkdESt2Fzrk";
+    //Note: this default RPC is overriden before injection
+    private String rpcUrl = EthereumNetworkRepository.MAINNET_RPC_URL;
 
     JsInjectorClient(Context context) {
         this.context = context;
@@ -87,7 +89,7 @@ class JsInjectorClient {
 
     String assembleJs(Context context, String template) {
         if (TextUtils.isEmpty(jsLibrary)) {
-            jsLibrary = loadFile(context, R.raw.trust_min);
+            jsLibrary = loadFile(context, R.raw.alphawallet_min);
         }
         String initJs = loadInitJs(context);
         return String.format(template, jsLibrary, initJs);
