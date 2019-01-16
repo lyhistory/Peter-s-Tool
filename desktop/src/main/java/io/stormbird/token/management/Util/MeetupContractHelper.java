@@ -5,6 +5,8 @@ import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.protocol.http.HttpService;
+import org.web3j.tx.ClientTransactionManager;
+import org.web3j.tx.TransactionManager;
 import org.web3j.tx.gas.ContractGasProvider;
 import org.web3j.tx.gas.DefaultGasProvider;
 
@@ -26,7 +28,8 @@ public class MeetupContractHelper {
         Unknown
     }
     public static boolean connected=false;
-
+    public String contractOwner;
+    public boolean isConnected;
     private static boolean pingEndPoint(String host, int port, int timeout){
         try(Socket socket = new Socket()){
             socket.connect(new InetSocketAddress(host,port),timeout);
@@ -36,7 +39,7 @@ public class MeetupContractHelper {
             return false;
         }
     }
-    public MeetupContractHelper(String contractAddress,String networkid,String privateKey){
+    public MeetupContractHelper(String contractAddress,String networkid,String privateKey,String ownerAddress){
         String host,port,url;
         switch (networkid){
             case "1":
@@ -60,11 +63,26 @@ public class MeetupContractHelper {
 //        new Thread(()->{
 //            connected = pingEndPoint(host, Integer.valueOf(port),3);
 //        }).start();
-        web3j = Web3j.build(new HttpService(url));
-        credentials =
-                Credentials.create(privateKey);
-        contractGasProvider = new DefaultGasProvider();
-        contract = Meetup.load(contractAddress, web3j, credentials, contractGasProvider);
+        try {
+            web3j = Web3j.build(new HttpService(url));
+            contractGasProvider = new DefaultGasProvider();
+            if (privateKey == null || privateKey.isEmpty()) {
+                TransactionManager transactionManager = new ClientTransactionManager(web3j, null);
+                contract = Meetup.load(contractAddress, web3j, transactionManager, contractGasProvider);
+            } else {
+                credentials = Credentials.create(privateKey);
+                contract = Meetup.load(contractAddress, web3j, credentials, contractGasProvider);
+            }
+            isConnected=true;
+        }catch (Exception ex){
+            isConnected=false;
+        }
+        try {
+            contractOwner = contract.organiser().send();
+        }catch (Exception ex){
+            isConnected=false;
+        }
+
     }
     public RedeemStatus checkSpawnableTokenRedeemStatus(BigInteger tokenID){
         try {
@@ -99,4 +117,6 @@ public class MeetupContractHelper {
             e.printStackTrace();
         }
     }
+
+
 }

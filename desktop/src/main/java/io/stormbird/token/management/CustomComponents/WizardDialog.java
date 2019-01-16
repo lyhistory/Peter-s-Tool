@@ -2,6 +2,7 @@ package io.stormbird.token.management.CustomComponents;
 
 import io.stormbird.token.management.MagicLinkTool;
 import io.stormbird.token.management.Model.ComboBoxSimpleItem;
+import io.stormbird.token.management.Util.XmlHelper;
 
 import javax.swing.*;
 import java.awt.event.*;
@@ -120,7 +121,7 @@ public class WizardDialog extends JDialog
                     contractAddress = null;
                     textFieldContractAddress.requestFocusInWindow();
                 } else {
-                    parent.processContractXml(networkid,contractAddress);
+                    XmlHelper.processContractXml(networkid,contractAddress,"");
                     clearAndHide();
                 }
             } else {

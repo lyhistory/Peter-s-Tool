@@ -52,7 +52,7 @@ public class RedeemSpawnableToken extends JFrame{
                                                    String privateKey=privatekeyTextField.getText();
                                                    if(link!="") {
                                                        MagicLinkDataModel model=parseMagicLink(link);
-                                                       MeetupContractHelper contractHelper = new MeetupContractHelper(contractAddr,"111",privateKey);
+                                                       MeetupContractHelper contractHelper = new MeetupContractHelper(contractAddr,"111",privateKey,"");
                                                        Sign.SignatureData sig = sigFromByteArray(model.signature);
                                                        contractHelper.redeemSpawnableToken(BigInteger.valueOf(model.expiry),Arrays.asList(model.tickets),sig.getV(),sig.getR(),sig.getS(),recepient);
                                                    }
