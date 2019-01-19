@@ -62,42 +62,44 @@ public class MagicLinkTool extends JFrame{
         if (_tokenViewModel.comboBoxContractAddressList != null
                 &&
                 comboBoxKeysList != null) {
-            ComboBoxSimpleItem currentPrivateKeySelectedItem = (ComboBoxSimpleItem)comboBoxKeysList.getSelectedItem();
+            ComboBoxSimpleItem currentPrivateKeySelectedItem = (ComboBoxSimpleItem) comboBoxKeysList.getSelectedItem();
             SessionDataHelper.initContract(_tokenViewModel.comboBoxContractAddressList.get(0).getKey(),
                     _tokenViewModel.comboBoxContractAddressList.get(0).getValue(),
-                    currentPrivateKeySelectedItem.getValue(),currentPrivateKeySelectedItem.getKey());
+                    currentPrivateKeySelectedItem.getValue(), currentPrivateKeySelectedItem.getKey());
         }
-        if(SessionDataHelper.isConnectedToWeb3()) {
-            SessionDataHelper.reloadMagicLink(_magicLinkDataModelArrayList);
-            for (Integer rowNo : _magicLinkViewMap.keySet()) {
-                boolean redeemed = _magicLinkDataModelArrayList.get(rowNo-1).redeemped;
-                Map<JTextField,TextFieldDataModel> textFieldMap=_magicLinkViewMap.get(rowNo).TextFieldForXMLMap;
-                for(JTextField textField:textFieldMap.keySet()){
-                    textField.setEnabled(!redeemed);
-                }
-                List<JComboBox> comboBoxes= _magicLinkViewMap.get(rowNo).ComboBoxForXMLList;
-                for(int i=0;i<comboBoxes.size();++i){
-                    comboBoxes.get(i).setEnabled(!redeemed);
-                }
-                Map<DateTimePickerViewModel,TextFieldDataModel> datetimePickerMap=_magicLinkViewMap.get(rowNo).DateTimePickerMap;
-                for(DateTimePickerViewModel dateTimePicker:datetimePickerMap.keySet()){
-                    dateTimePicker.TimeZone.setEnabled(!redeemed);
-                    dateTimePicker.DateTimePickerTime.setEnabled(!redeemed);
+        if(_magicLinkDataModelArrayList != null) {
+            if (SessionDataHelper.isConnectedToWeb3()) {
+                SessionDataHelper.reloadMagicLink(_magicLinkDataModelArrayList);
+                for (Integer rowNo : _magicLinkViewMap.keySet()) {
+                    boolean redeemed = _magicLinkDataModelArrayList.get(rowNo - 1).redeemped;
+                    Map<JTextField, TextFieldDataModel> textFieldMap = _magicLinkViewMap.get(rowNo).TextFieldForXMLMap;
+                    for (JTextField textField : textFieldMap.keySet()) {
+                        textField.setEnabled(!redeemed);
+                    }
+                    List<JComboBox> comboBoxes = _magicLinkViewMap.get(rowNo).ComboBoxForXMLList;
+                    for (int i = 0; i < comboBoxes.size(); ++i) {
+                        comboBoxes.get(i).setEnabled(!redeemed);
+                    }
+                    Map<DateTimePickerViewModel, TextFieldDataModel> datetimePickerMap = _magicLinkViewMap.get(rowNo).DateTimePickerMap;
+                    for (DateTimePickerViewModel dateTimePicker : datetimePickerMap.keySet()) {
+                        dateTimePicker.TimeZone.setEnabled(!redeemed);
+                        dateTimePicker.DateTimePickerTime.setEnabled(!redeemed);
+                    }
                 }
             }
         }
     }
     private void initSessionData() {
         try {
-            File f = new File(ConfigManager.ticketXMLTemplatePath);
+            File f = new File(ConfigManager.ticketSignedXMLFilePath);
             if (f.exists() == true) {
-                _tokenViewModel = new TokenViewModel(new FileInputStream(ConfigManager.ticketXMLTemplatePath), Locale.getDefault());
+                _tokenViewModel = new TokenViewModel(new FileInputStream(ConfigManager.ticketSignedXMLFilePath), Locale.getDefault());
             }
             //load keys and MeetupContract.xml if available
             if(keys==null) {
                 keys = SessionDataHelper.loadWalletFromKeystore();
             }
-            if (_tokenViewModel.comboBoxContractAddressList != null
+            if (_tokenViewModel!=null&&_tokenViewModel.comboBoxContractAddressList != null
                     &&
                     keys != null && keys.size() > 0) {
                 Map.Entry<String,String> key=keys.entrySet().iterator().next();
@@ -156,25 +158,29 @@ public class MagicLinkTool extends JFrame{
     }
 
     public void updateUITipPane(){
-        textFieldTips.setText("Welcome!");
-        if(SessionDataHelper.isConnectedToWeb3()){
-            jButtonConnect.setText("Web3 Connected");
-            jButtonConnect.setEnabled(false);
-            jButtonConnect.setForeground(Color.GREEN);
-            jButtonConnect.setBackground(Color.GREEN);
-            String contractOwner=SessionDataHelper.getContractOwner();
-            ComboBoxSimpleItem currentPrivateKeySelectedItem = (ComboBoxSimpleItem)comboBoxKeysList.getSelectedItem();
-            if(contractOwner!=null&&contractOwner.isEmpty()==false
-                    &&
-                    contractOwner.equalsIgnoreCase(currentPrivateKeySelectedItem.getKey().toString())==false){
-                textFieldTips.setText("Warn:: current selected key is not the contract owner!! tickets creation with it will be invalid!!");
+        if(keys==null||keys.size()==0){
+
+        }else {
+            textFieldTips.setText("Welcome!");
+            if (SessionDataHelper.isConnectedToWeb3()) {
+                jButtonConnect.setText("Web3 Connected");
+                jButtonConnect.setEnabled(false);
+                jButtonConnect.setForeground(Color.GREEN);
+                jButtonConnect.setBackground(Color.GREEN);
+                String contractOwner = SessionDataHelper.getContractOwner();
+                ComboBoxSimpleItem currentPrivateKeySelectedItem = (ComboBoxSimpleItem) comboBoxKeysList.getSelectedItem();
+                if (contractOwner != null && contractOwner.isEmpty() == false
+                        &&
+                        contractOwner.equalsIgnoreCase(currentPrivateKeySelectedItem.getKey().toString()) == false) {
+                    textFieldTips.setText("Warn:: current selected key is not the contract owner!! tickets creation with it will be invalid!!");
+                }
+            } else {
+                textFieldTips.setText("Warn:: failed connection,you wouldn't know which tickets been redeemed!!");
+                jButtonConnect.setText("Retry");
+                jButtonConnect.setEnabled(true);
+                jButtonConnect.setForeground(Color.red);
+                jButtonConnect.setBackground(Color.orange);
             }
-        }else{
-            textFieldTips.setText("Warn:: failed connection,you wouldn't know which tickets been redeemed!!");
-            jButtonConnect.setText("Retry");
-            jButtonConnect.setEnabled(true);
-            jButtonConnect.setForeground(Color.red);
-            jButtonConnect.setBackground(Color.orange);
         }
         this.pack();
     }
@@ -263,6 +269,10 @@ public class MagicLinkTool extends JFrame{
                         keys = new ConcurrentHashMap<>();
                     }
                     keys.put(address,privateKey);
+                    if(keys.size()==1){
+//                        reloadMagicLink();
+//                        updateUITipPane();
+                    }
                 }catch (Exception ex){
                     JOptionPane.showMessageDialog(null, "Invalid PrivateKey!",
                             "Error", JOptionPane.ERROR_MESSAGE);

@@ -42,7 +42,7 @@ public class XmlHelper {
         //step 1, create xml based on template
         updateContractAddress(networkid,contractAddress);
         //step 2, sign
-        signContractXML(privateKey);
+        //signContractXML(privateKey);
         //step 3, upload
     }
     /**
@@ -105,10 +105,10 @@ public class XmlHelper {
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
             dbFactory.setNamespaceAware(true);
             dBuilder = dbFactory.newDocumentBuilder();
-            xml = dBuilder.parse(ConfigManager.ticketXMLTemplatePath);
+            xml = dBuilder.parse(ConfigManager.ticketSignedXMLFilePath);
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
             transformer = transformerFactory.newTransformer();
-            FileHelper.createFileIfNotExists(ConfigManager.ticketXMLTemplatePath);
+            FileHelper.createFileIfNotExists(ConfigManager.ticketSignedXMLFilePath);
 
             xml.getDocumentElement().normalize(); // also good for parcel
 

@@ -58,7 +58,7 @@ public class MeetupContractHelper {
         if(port.equals("80")){
             url=host;
         }else{
-            url=host+":"+port;
+                url=host+":"+port;
         }
 //        new Thread(()->{
 //            connected = pingEndPoint(host, Integer.valueOf(port),3);
@@ -108,7 +108,7 @@ public class MeetupContractHelper {
             BigInteger biV = new BigInteger(_v);
 
             TransactionReceipt transactionReceipt =  contract.spawnPassTo(expiry,tickets,biV,r,s,recipient).send();
-            boolean spawned = contract.spawned(tickets.get(0)).send();
+            //boolean spawned = contract.spawned(tickets.get(0)).send();
             String getTheContractAddress =  contract.getThisContractAddress().send();
         }catch (ConnectException e){
             connected = false;
