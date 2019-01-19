@@ -9,6 +9,8 @@ public class ConfigManager {
     public static String ticketSignedXMLFilePath="./desktop/res/MeetupContract-signed.xml";
     public static String magicLinksCSVPath = "./desktop/res/magiclinks.csv";
 
+    public static String privateKeyFilePath = "./desktop/res/keystore.ks";
+
     public String init(){
         File f = new File(ConfigManager.ticketXMLTemplatePath);
         if(f.exists()==false){

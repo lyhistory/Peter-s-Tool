@@ -23,6 +23,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SessionDataHelper {
     private static MeetupContractHelper contractHelper;
 
+    public static void endSession(){
+
+    }
     public static void initContract(String contractAddress,String networkid,String privateKey,String ownerAddress){
         contractHelper = new MeetupContractHelper(contractAddress,networkid,privateKey,ownerAddress);
     }
@@ -95,6 +98,7 @@ public class SessionDataHelper {
                 }
                 ++i;
             }
+            reader.close();
         }catch (Exception ex){
             return null;
         }

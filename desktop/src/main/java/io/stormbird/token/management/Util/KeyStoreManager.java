@@ -1,5 +1,6 @@
 package io.stormbird.token.management.Util;
 
+import io.stormbird.token.management.ConfigManager;
 import org.json.JSONArray;
 
 import javax.crypto.SecretKey;
@@ -18,7 +19,7 @@ import java.util.Base64;
 //import java.security.KeyStore;
 
 public class KeyStoreManager {
-    public String privateKeyFilePath = "./desktop/res/keystore.ks";
+
     private KeyStore keyStore;
     private final static String keyStorePasswordStr="alpha-wallet";
     private final static String keyEntryPasswordStr=getMacID();
@@ -28,8 +29,8 @@ public class KeyStoreManager {
             keyStore = KeyStore.getInstance("JCEKS");
             char[] keyStorePassword = keyStorePasswordStr.toCharArray();
             InputStream keyStoreData=null;
-            if(keystoreFileExists()) {
-                keyStoreData = new FileInputStream(privateKeyFilePath);
+            if(FileHelper.checkFileExists(ConfigManager.privateKeyFilePath)) {
+                keyStoreData = new FileInputStream(ConfigManager.privateKeyFilePath);
             }
             keyStore.load(keyStoreData, keyStorePassword);
         } catch (KeyStoreException e) {
@@ -89,7 +90,7 @@ public class KeyStoreManager {
         char[] keyStorePassword = keyStorePasswordStr.toCharArray();
         FileOutputStream keyStoreOutputStream = null;
         try {
-            keyStoreOutputStream = new FileOutputStream(privateKeyFilePath);
+            keyStoreOutputStream = new FileOutputStream(ConfigManager.privateKeyFilePath);
             keyStore.store(keyStoreOutputStream, keyStorePassword);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -103,16 +104,7 @@ public class KeyStoreManager {
             e.printStackTrace();
         }
     }
-    private boolean keystoreFileExists(){
-        File f = new File(privateKeyFilePath);
-        if (f.exists()==false) {
-            if(f.getParentFile().exists()==false){
-                f.getParentFile().mkdirs();
-            }
-            return false;
-        }
-        return true;
-    }
+
     private static String getMacID(){
         InetAddress ip;
         try {

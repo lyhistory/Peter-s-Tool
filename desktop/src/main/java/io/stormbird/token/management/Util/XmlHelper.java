@@ -42,7 +42,7 @@ public class XmlHelper {
         //step 1, create xml based on template
         updateContractAddress(networkid,contractAddress);
         //step 2, sign
-        //signContractXML(privateKey);
+        signContractXML(privateKey);
         //step 3, upload
     }
     /**
@@ -113,6 +113,7 @@ public class XmlHelper {
             xml.getDocumentElement().normalize(); // also good for parcel
 
             final Element documentRoot = xml.getDocumentElement();
+            String prefix = documentRoot.getPrefix();
             //Canonicalization transform
 //            final Transforms contentTransforms = new Transforms(xml);
 //            //TRANSFORM_ENVELOPED_SIGNATURE
@@ -130,18 +131,18 @@ public class XmlHelper {
             ASN1ObjectIdentifier oid = (ASN1ObjectIdentifier) innerSeq.getObjectAt(1).toASN1Primitive();
             DERBitString key = (DERBitString) seq.getObjectAt(1).toASN1Primitive();
 
-            Element ECKeyValue = xml.createElement("ds:ECDSAKeyValue");
+            Element ECKeyValue = xml.createElement(prefix+":ECDSAKeyValue");
             ECKeyValue.setAttribute("xmlns", "http://www.w3.org/2001/04/xmldsig-more#");
-            Element DomainParameters = xml.createElement("ds:DomainParameters");
-            Element NamedCurve = xml.createElement("ds:NamedCurve");
+            Element DomainParameters = xml.createElement(prefix+":DomainParameters");
+            Element NamedCurve = xml.createElement(prefix+":NamedCurve");
             NamedCurve.setAttribute("URI", "urn:oid:" + oid.getId());
             DomainParameters.appendChild(NamedCurve);
             ECKeyValue.appendChild(DomainParameters);
 
-            Element PublicKey = xml.createElement("ds:PublicKey");
-            Element PublicKeyX = xml.createElement("ds:X");
+            Element PublicKey = xml.createElement(prefix+":PublicKey");
+            Element PublicKeyX = xml.createElement(prefix+":X");
             PublicKeyX.setAttribute("Value", ((ECPublicKey) pk).getW().getAffineX().toString());
-            Element PublicKeyY = xml.createElement("ds:Y");
+            Element PublicKeyY = xml.createElement(prefix+":Y");
             PublicKeyY.setAttribute("Value", ((ECPublicKey) pk).getW().getAffineY().toString());
 //                PublicKey.setTextContent(Base64.encodeBase64String(key.getBytes()));
             PublicKey.appendChild(PublicKeyX);

@@ -40,6 +40,12 @@ public class RedeemSpawnableToken extends JFrame{
             JTextField recepientAddress =new JTextField();
             recepientAddress.setColumns(10);
             mainPanel.add(recepientAddress);
+
+            mainPanel.add(new JLabel("network:"));
+            JTextField networkField =new JTextField();
+            networkField.setColumns(2);
+            mainPanel.add(networkField);
+
             JButton buttonRedeem=new JButton();
             buttonRedeem.setText("Click to Import");
             buttonRedeem.setForeground(Color.red);
@@ -50,9 +56,10 @@ public class RedeemSpawnableToken extends JFrame{
                                                    String link = magicLinkTextField.getText();
                                                    String recepient = recepientAddress.getText();
                                                    String privateKey=privatekeyTextField.getText();
+                                                   String network = networkField.getText();
                                                    if(link!="") {
                                                        MagicLinkDataModel model=parseMagicLink(link);
-                                                       MeetupContractHelper contractHelper = new MeetupContractHelper(contractAddr,"3",privateKey,"");
+                                                       MeetupContractHelper contractHelper = new MeetupContractHelper(contractAddr,network,privateKey,"");
                                                        Sign.SignatureData sig = sigFromByteArray(model.signature);
                                                        contractHelper.redeemSpawnableToken(BigInteger.valueOf(model.expiry),Arrays.asList(model.tickets),sig.getV(),sig.getR(),sig.getS(),recepient);
                                                    }

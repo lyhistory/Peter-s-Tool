@@ -10,11 +10,13 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.filechooser.FileSystemView;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -49,6 +51,7 @@ public class MagicLinkTool extends JFrame{
     private JTextField textFieldPrivateKey;
 
     private JTextField textFieldTips;
+    private JTextField textFieldConnectionStatus;
     private JButton jButtonConnect;
 
     private static int magicLinkCount=0;
@@ -57,6 +60,8 @@ public class MagicLinkTool extends JFrame{
     private static ArrayList<MagicLinkDataModel> _magicLinkDataModelArrayList;
 
     private Map<String,String> keys;
+
+    private static int STEP=1;
 
     private void reloadMagicLink(){
         if (_tokenViewModel.comboBoxContractAddressList != null
@@ -158,14 +163,25 @@ public class MagicLinkTool extends JFrame{
     }
 
     public void updateUITipPane(){
+        textFieldTips.setVisible(false);
+        textFieldConnectionStatus.setVisible(false);
+        jButtonConnect.setVisible(false);
         if(keys==null||keys.size()==0){
-
-        }else {
+            textFieldTips.setVisible(true);
+            textFieldTips.setText("Please import private key");
+            textFieldConnectionStatus.setVisible(false);
+            jButtonConnect.setVisible(false);
+        }else if(STEP==2){
+            textFieldTips.setVisible(true);
+            textFieldConnectionStatus.setVisible(true);
+            jButtonConnect.setVisible(true);
             textFieldTips.setText("Welcome!");
             if (SessionDataHelper.isConnectedToWeb3()) {
-                jButtonConnect.setText("Web3 Connected");
-                jButtonConnect.setEnabled(false);
-                jButtonConnect.setForeground(Color.GREEN);
+                textFieldConnectionStatus.setText("Connected");
+                textFieldConnectionStatus.setBackground(Color.green);
+                jButtonConnect.setText("Reload");
+                jButtonConnect.setEnabled(true);
+                jButtonConnect.setForeground(Color.BLACK);
                 jButtonConnect.setBackground(Color.GREEN);
                 String contractOwner = SessionDataHelper.getContractOwner();
                 ComboBoxSimpleItem currentPrivateKeySelectedItem = (ComboBoxSimpleItem) comboBoxKeysList.getSelectedItem();
@@ -176,12 +192,16 @@ public class MagicLinkTool extends JFrame{
                 }
             } else {
                 textFieldTips.setText("Warn:: failed connection,you wouldn't know which tickets been redeemed!!");
+                textFieldConnectionStatus.setText("Disconnected");
+                textFieldConnectionStatus.setBackground(Color.RED);
                 jButtonConnect.setText("Retry");
                 jButtonConnect.setEnabled(true);
                 jButtonConnect.setForeground(Color.red);
                 jButtonConnect.setBackground(Color.orange);
             }
         }
+        this.revalidate();
+        this.repaint();
         this.pack();
     }
     /**
@@ -198,21 +218,96 @@ public class MagicLinkTool extends JFrame{
         menu.setMnemonic(KeyEvent.VK_A);
         menuBar.add(menu);
 
-        menuItem = new JMenuItem("New contract behaviour XML file...",
+//        menuItem = new JMenuItem("New contract behaviour XML file...",
+//                KeyEvent.VK_T);
+//        menu.add(menuItem);
+//        menuItem = new JMenuItem("Open contract behaviour XML file...",
+//                KeyEvent.VK_T);
+//        menu.add(menuItem);
+        menuItem = new JMenuItem("Reset",
                 KeyEvent.VK_T);
-        //menuItem.addActionListener(this);
         menu.add(menuItem);
-        menuItem = new JMenuItem("Open contract behaviour XML file...",
-                KeyEvent.VK_T);
-        //menuItem.addActionListener(this);
-        menu.add(menuItem);
+        menuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int dialogButton = JOptionPane.YES_NO_OPTION;
+                int dialogResult = JOptionPane.showConfirmDialog (null, "Have you export your tickets? click Yes to reset, click no to cancel","Warning",dialogButton);
+                if(dialogResult == JOptionPane.YES_OPTION){
+                    reset();
+                }
+            }
+        });
         menu.addSeparator();
         menuItem = new JMenuItem("Export magic links...",
                 KeyEvent.VK_T);
-        //menuItem.addActionListener(this);
+        menuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                JFileChooser jfc = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
+
+                int returnValue = jfc.showOpenDialog(null);
+                // int returnValue = jfc.showSaveDialog(null);
+
+                if (returnValue == JFileChooser.APPROVE_OPTION) {
+                    File selectedFile = jfc.getSelectedFile();
+                    System.out.println(selectedFile.getAbsolutePath());
+                }
+                SessionDataHelper.saveMagicLinksToCSV(_magicLinkViewMap);
+                try(FileWriter fw = new FileWriter(jfc.getSelectedFile()+".csv")) {
+                    BufferedWriter out = new BufferedWriter(fw);
+                    File fin = new File(ConfigManager.magicLinksCSVPath);
+                    FileInputStream fis = new FileInputStream(fin);
+                    BufferedReader in = new BufferedReader(new InputStreamReader(fis));
+                    String aLine = null;
+                    while ((aLine = in.readLine()) != null) {
+                        out.write(aLine);
+                        out.newLine();
+                    }
+                    fis.close();
+                    in.close();
+                    out.close();
+                    fw.flush();
+                }catch (Exception io){
+
+                }
+            }
+        });
         menu.add(menuItem);
-        //Build second menu in the menu bar.
-        menu = new JMenu("Help");
+        menu.addSeparator();
+        menuItem = new JMenuItem("Export signed xml...",
+                KeyEvent.VK_S);
+        menuItem.addActionListener(new ActionListener() {
+                                       @Override
+                                       public void actionPerformed(ActionEvent e) {
+                                           JFileChooser jfc = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
+
+                                           int returnValue = jfc.showOpenDialog(null);
+
+                                           if (returnValue == JFileChooser.APPROVE_OPTION) {
+                                               File selectedFile = jfc.getSelectedFile();
+                                               System.out.println(selectedFile.getAbsolutePath());
+                                           }
+                                           try(OutputStreamWriter fw = new OutputStreamWriter(new FileOutputStream(jfc.getSelectedFile()+".xml"), StandardCharsets.UTF_8)) {
+                                               BufferedWriter out = new BufferedWriter(fw);
+                                               File fin = new File(ConfigManager.ticketSignedXMLFilePath);
+                                               FileInputStream fis = new FileInputStream(fin);
+                                               BufferedReader in = new BufferedReader(new InputStreamReader(fis, StandardCharsets.UTF_8));
+                                               String aLine = null;
+                                               while ((aLine = in.readLine()) != null) {
+                                                   out.write(aLine);
+                                                   out.newLine();
+                                               }
+                                               in.close();
+                                               out.close();
+                                               fw.flush();
+                                           }catch (Exception io){
+
+                                           }
+                                       }
+                                   });
+        menu.add(menuItem);
+                //Build second menu in the menu bar.
+                menu = new JMenu("Help");
         menu.setMnemonic(KeyEvent.VK_N);
         menuBar.add(menu);
         menuItem = new JMenuItem("About",
@@ -228,6 +323,47 @@ public class MagicLinkTool extends JFrame{
         return menuBar;
     }
 
+    private void reset(){
+        STEP=1;
+        //reset global variables
+        magicLinkCount=0;
+        if(_magicLinkViewMap!=null) {
+            _magicLinkViewMap.clear();
+        }
+        if(_magicLinkDataModelArrayList!=null) {
+            _magicLinkDataModelArrayList.clear();
+        }
+        if(keys!=null) {
+            keys.clear();
+        }
+        //clean file
+        FileHelper.deleteFile(ConfigManager.ticketSignedXMLFilePath);
+        FileHelper.deleteFile(ConfigManager.magicLinksCSVPath);
+        FileHelper.deleteFile(ConfigManager.privateKeyFilePath);
+        //reset UI
+        if(comboBoxKeysList!=null) {
+            comboBoxKeysList.removeAllItems();
+            textFieldPrivateKey.removeAll();
+        }
+        textFieldTips.setVisible(false);
+        textFieldConnectionStatus.setVisible(false);
+        jButtonConnect.setVisible(false);
+        if(comboBoxContractAddress!=null) {
+            comboBoxContractAddress.removeAllItems();
+        }
+
+        if(tabPane_container_centerPane!=null) {
+            tabPane_container_centerPane.removeAll();
+        }
+        if(tabPane_container!=null){
+            tabPane_container.removeAll();
+        }
+
+        createWizard();
+        this.revalidate();
+        this.repaint();
+        this.pack();
+    }
     /**
      *
      */
@@ -269,10 +405,10 @@ public class MagicLinkTool extends JFrame{
                         keys = new ConcurrentHashMap<>();
                     }
                     keys.put(address,privateKey);
-                    if(keys.size()==1){
-//                        reloadMagicLink();
-//                        updateUITipPane();
+                    if(keys.size()>1){
+                        reloadMagicLink();
                     }
+                    updateUITipPane();
                 }catch (Exception ex){
                     JOptionPane.showMessageDialog(null, "Invalid PrivateKey!",
                             "Error", JOptionPane.ERROR_MESSAGE);
@@ -303,11 +439,17 @@ public class MagicLinkTool extends JFrame{
         JPanel tipsPane = new JPanel();
         tipsPane.setLayout(flowLayout);
         textFieldTips=new JTextField();
+        textFieldTips.setVisible(false);
         textFieldTips.setEditable(false);
         textFieldTips.setBackground(Color.yellow);
         textFieldTips.setFont(new Font("SansSerif", Font.BOLD, 15));
         tipsPane.add(textFieldTips);
+        textFieldConnectionStatus=new JTextField();
+        textFieldConnectionStatus.setVisible(false);
+        textFieldConnectionStatus.setEditable(false);
+        tipsPane.add(textFieldConnectionStatus);
         jButtonConnect=new JButton();
+        jButtonConnect.setVisible(false);
         jButtonConnect.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -337,8 +479,10 @@ public class MagicLinkTool extends JFrame{
         tabPane_container.setLayout(new BoxLayout(tabPane_container, BoxLayout.Y_AXIS));
         tabPane_container.setBorder(new EmptyBorder(10, 10, 10, 10));
         if(_magicLinkDataModelArrayList==null||_magicLinkDataModelArrayList.size()==0){
+            STEP=1;
             createWizard();
         }else{
+            STEP=2;
             createMagicLinkPane();
         }
         mainSplitPane_tabPane.addTab("Meetup[x]",null, tabPane_container, "");
@@ -399,9 +543,11 @@ public class MagicLinkTool extends JFrame{
                         textFieldContractAddress.requestFocusInWindow();
                     } else {
                         //
+                        STEP = 2;
                         ComboBoxSimpleItem currentPrivateKeySelectedItem = (ComboBoxSimpleItem)comboBoxKeysList.getSelectedItem();
                         XmlHelper.processContractXml(networkid, contractAddress,currentPrivateKeySelectedItem.getValue());
                         initSessionData();
+                        updateUITipPane();
                         createMagicLinkPane();
                     }
                 }
