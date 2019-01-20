@@ -44,6 +44,7 @@ public class XmlHelper {
         //step 2, sign
         signContractXML(privateKey);
         //step 3, upload
+        uploadConttractXML();
     }
     /**
      *
@@ -171,5 +172,9 @@ public class XmlHelper {
         } catch (InvalidKeySpecException e) {
             e.printStackTrace();
         }
+    }
+
+    public static void uploadConttractXML(){
+
     }
 }

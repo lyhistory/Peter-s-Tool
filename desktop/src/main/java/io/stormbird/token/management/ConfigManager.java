@@ -6,7 +6,7 @@ import java.io.InputStream;
 public class ConfigManager {
 
     public static String ticketXMLTemplatePath = "./desktop/res/MeetupContract.xml";
-    public static String ticketSignedXMLFilePath="./desktop/res/MeetupContract-signed.xml";
+    public static String ticketSignedXMLFilePath="./desktop/res/";
     public static String magicLinksCSVPath = "./desktop/res/magiclinks.csv";
 
     public static String privateKeyFilePath = "./desktop/res/keystore.ks";

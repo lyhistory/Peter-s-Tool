@@ -352,6 +352,7 @@ public class MagicLinkTool extends JFrame{
                     } else {
                         // todo validation
                         STEP = 2;
+                        ConfigManager.ticketSignedXMLFilePath+=contractAddress+".xml";
                         ComboBoxSimpleItem selectedNetworkItem = (ComboBoxSimpleItem) comboBoxNetworkID.getSelectedItem();
                         String networkId = selectedNetworkItem.getValue();
                         ComboBoxSimpleItem currentPrivateKeySelectedItem = (ComboBoxSimpleItem)global_comboBoxKeysList.getSelectedItem();
