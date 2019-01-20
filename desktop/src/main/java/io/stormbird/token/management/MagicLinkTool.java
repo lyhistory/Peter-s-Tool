@@ -16,9 +16,6 @@ import java.awt.event.*;
 import java.io.*;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,96 +36,41 @@ import java.util.concurrent.ConcurrentHashMap;
  * 		    south(buttonAddAnother)
  **/
 public class MagicLinkTool extends JFrame{
+    private static int STEP = 1;
 
     private JSplitPane mainSplitPane;
     private JPanel mainSplitPane_topPane;
-    private JComboBox comboBoxKeysList;
-    private JTabbedPane mainSplitPane_tabPane;
+    private JComboBox global_comboBoxKeysList;
+    private JTabbedPane mainSplitPane_tabPane; //
+
     private JPanel tabPane_container;
     private JPanel tabPane_wizard;
-    private JComboBox comboBoxContractAddress;
+    private JComboBox global_comboBoxContractAddress;
     private JPanel tabPane_container_centerPane;
-    private JTextField textFieldPrivateKey;
+    private JTextField global_textFieldPrivateKey;
 
-    private JTextField textFieldTips;
-    private JTextField textFieldConnectionStatus;
-    private JButton jButtonConnect;
+    private JTextField global_textFieldTips;
+    private JTextField global_textFieldConnectionStatus;
+    private JButton global_buttonConnect;
 
     private static int magicLinkCount=0;
+    private Map<String,String> keys;
     private TokenViewModel _tokenViewModel;
     private Map<Integer, MagicLinkToolViewModel> _magicLinkViewMap;
     private static ArrayList<MagicLinkDataModel> _magicLinkDataModelArrayList;
 
-    private Map<String,String> keys;
-
-    private static int STEP=1;
-
-    private void reloadMagicLink(){
-        if (_tokenViewModel.comboBoxContractAddressList != null
-                &&
-                comboBoxKeysList != null) {
-            ComboBoxSimpleItem currentPrivateKeySelectedItem = (ComboBoxSimpleItem) comboBoxKeysList.getSelectedItem();
-            SessionDataHelper.initContract(_tokenViewModel.comboBoxContractAddressList.get(0).getKey(),
-                    _tokenViewModel.comboBoxContractAddressList.get(0).getValue(),
-                    currentPrivateKeySelectedItem.getValue(), currentPrivateKeySelectedItem.getKey());
-        }
-        if(_magicLinkDataModelArrayList != null) {
-            if (SessionDataHelper.isConnectedToWeb3()) {
-                SessionDataHelper.reloadMagicLink(_magicLinkDataModelArrayList);
-                for (Integer rowNo : _magicLinkViewMap.keySet()) {
-                    boolean redeemed = _magicLinkDataModelArrayList.get(rowNo - 1).redeemped;
-                    Map<JTextField, TextFieldDataModel> textFieldMap = _magicLinkViewMap.get(rowNo).TextFieldForXMLMap;
-                    for (JTextField textField : textFieldMap.keySet()) {
-                        textField.setEnabled(!redeemed);
-                    }
-                    List<JComboBox> comboBoxes = _magicLinkViewMap.get(rowNo).ComboBoxForXMLList;
-                    for (int i = 0; i < comboBoxes.size(); ++i) {
-                        comboBoxes.get(i).setEnabled(!redeemed);
-                    }
-                    Map<DateTimePickerViewModel, TextFieldDataModel> datetimePickerMap = _magicLinkViewMap.get(rowNo).DateTimePickerMap;
-                    for (DateTimePickerViewModel dateTimePicker : datetimePickerMap.keySet()) {
-                        dateTimePicker.TimeZone.setEnabled(!redeemed);
-                        dateTimePicker.DateTimePickerTime.setEnabled(!redeemed);
-                    }
-                }
-            }
-        }
-    }
-    private void initSessionData() {
-        try {
-            File f = new File(ConfigManager.ticketSignedXMLFilePath);
-            if (f.exists() == true) {
-                _tokenViewModel = new TokenViewModel(new FileInputStream(ConfigManager.ticketSignedXMLFilePath), Locale.getDefault());
-            }
-            //load keys and MeetupContract.xml if available
-            if(keys==null) {
-                keys = SessionDataHelper.loadWalletFromKeystore();
-            }
-            if (_tokenViewModel!=null&&_tokenViewModel.comboBoxContractAddressList != null
-                    &&
-                    keys != null && keys.size() > 0) {
-                Map.Entry<String,String> key=keys.entrySet().iterator().next();
-                SessionDataHelper.initContract(_tokenViewModel.comboBoxContractAddressList.get(0).getKey(),
-                        _tokenViewModel.comboBoxContractAddressList.get(0).getValue(),
-                        key.getValue(),key.getKey());
-            }
-            //load magiclinks if available
-            _magicLinkDataModelArrayList = SessionDataHelper.loadMagicLinksFromCSV();
-        }catch (IOException ex){
-
-        }catch (SAXException ex){
-
-        }
-    }
     public MagicLinkTool(){
         try {
-            _magicLinkViewMap = new ConcurrentHashMap<>();
-            initSessionData();
+            this._magicLinkViewMap = new ConcurrentHashMap<>();
 
-            this.setJMenuBar(createMenuBar());
-            //init using keys if available
-            this.createUpperPaneForKeys();
-            this.createTabPane();
+            this.resumeSessionData();   //for rendering createTopPane(), createMainTabPane() and updateWeb3StatusUI()
+
+            this.setJMenuBar(this.createMenuBar());
+            this.createTopPane();
+            this.createMainTabPane();
+
+            this.updateWeb3StatusUI();
+
             this.mainSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, mainSplitPane_topPane, mainSplitPane_tabPane);
             //this.mainSplitPane.setMinimumSize(new Dimension(900,300));
             this.setContentPane(mainSplitPane);
@@ -138,15 +80,15 @@ public class MagicLinkTool extends JFrame{
             this.addWindowListener(new WindowAdapter() {
                 @Override
                 public void windowClosing(WindowEvent e) {
-                    SessionDataHelper.saveMagicLinksToCSV(_magicLinkViewMap);
-                    SessionDataHelper.savePrivateKey(keys);
+                    SessionDataHelper.saveSession(_magicLinkViewMap, keys);
                     super.windowClosing(e);
                     System.exit(0);
                 }
             });
-
             this.setLocationByPlatform(true);
             this.setResizable(true);
+            this.revalidate();
+            this.repaint();
             this.pack();
         } catch (IllegalArgumentException e){
             e.printStackTrace();
@@ -162,48 +104,6 @@ public class MagicLinkTool extends JFrame{
         magicLinkTool.setVisible(true);
     }
 
-    public void updateUITipPane(){
-        textFieldTips.setVisible(false);
-        textFieldConnectionStatus.setVisible(false);
-        jButtonConnect.setVisible(false);
-        if(keys==null||keys.size()==0){
-            textFieldTips.setVisible(true);
-            textFieldTips.setText("Please import private key");
-            textFieldConnectionStatus.setVisible(false);
-            jButtonConnect.setVisible(false);
-        }else if(STEP==2){
-            textFieldTips.setVisible(true);
-            textFieldConnectionStatus.setVisible(true);
-            jButtonConnect.setVisible(true);
-            textFieldTips.setText("Welcome!");
-            if (SessionDataHelper.isConnectedToWeb3()) {
-                textFieldConnectionStatus.setText("Connected");
-                textFieldConnectionStatus.setBackground(Color.green);
-                jButtonConnect.setText("Reload");
-                jButtonConnect.setEnabled(true);
-                jButtonConnect.setForeground(Color.BLACK);
-                jButtonConnect.setBackground(Color.GREEN);
-                String contractOwner = SessionDataHelper.getContractOwner();
-                ComboBoxSimpleItem currentPrivateKeySelectedItem = (ComboBoxSimpleItem) comboBoxKeysList.getSelectedItem();
-                if (contractOwner != null && contractOwner.isEmpty() == false
-                        &&
-                        contractOwner.equalsIgnoreCase(currentPrivateKeySelectedItem.getKey().toString()) == false) {
-                    textFieldTips.setText("Warn:: current selected key is not the contract owner!! tickets creation with it will be invalid!!");
-                }
-            } else {
-                textFieldTips.setText("Warn:: failed connection,you wouldn't know which tickets been redeemed!!");
-                textFieldConnectionStatus.setText("Disconnected");
-                textFieldConnectionStatus.setBackground(Color.RED);
-                jButtonConnect.setText("Retry");
-                jButtonConnect.setEnabled(true);
-                jButtonConnect.setForeground(Color.red);
-                jButtonConnect.setBackground(Color.orange);
-            }
-        }
-        this.revalidate();
-        this.repaint();
-        this.pack();
-    }
     /**
      * Create Top Menu
      * @return
@@ -218,20 +118,15 @@ public class MagicLinkTool extends JFrame{
         menu.setMnemonic(KeyEvent.VK_A);
         menuBar.add(menu);
 
-//        menuItem = new JMenuItem("New contract behaviour XML file...",
-//                KeyEvent.VK_T);
-//        menu.add(menuItem);
-//        menuItem = new JMenuItem("Open contract behaviour XML file...",
-//                KeyEvent.VK_T);
-//        menu.add(menuItem);
         menuItem = new JMenuItem("Reset",
-                KeyEvent.VK_T);
+                KeyEvent.VK_B);
         menu.add(menuItem);
         menuItem.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 int dialogButton = JOptionPane.YES_NO_OPTION;
-                int dialogResult = JOptionPane.showConfirmDialog (null, "Have you export your tickets? click Yes to reset, click no to cancel","Warning",dialogButton);
+                int dialogResult = JOptionPane.showConfirmDialog (null,
+                        "Have you export your tickets? click Yes to reset, click no to cancel","Warning",dialogButton);
                 if(dialogResult == JOptionPane.YES_OPTION){
                     reset();
                 }
@@ -239,75 +134,36 @@ public class MagicLinkTool extends JFrame{
         });
         menu.addSeparator();
         menuItem = new JMenuItem("Export magic links...",
-                KeyEvent.VK_T);
+                KeyEvent.VK_C);
         menuItem.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 JFileChooser jfc = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
-
                 int returnValue = jfc.showOpenDialog(null);
-                // int returnValue = jfc.showSaveDialog(null);
-
                 if (returnValue == JFileChooser.APPROVE_OPTION) {
-                    File selectedFile = jfc.getSelectedFile();
-                    System.out.println(selectedFile.getAbsolutePath());
+                    SessionDataHelper.saveMagicLinksToCSV(_magicLinkViewMap);
+                    FileHelper.saveToFile(ConfigManager.magicLinksCSVPath, jfc.getSelectedFile()+".csv");
                 }
-                SessionDataHelper.saveMagicLinksToCSV(_magicLinkViewMap);
-                try(FileWriter fw = new FileWriter(jfc.getSelectedFile()+".csv")) {
-                    BufferedWriter out = new BufferedWriter(fw);
-                    File fin = new File(ConfigManager.magicLinksCSVPath);
-                    FileInputStream fis = new FileInputStream(fin);
-                    BufferedReader in = new BufferedReader(new InputStreamReader(fis));
-                    String aLine = null;
-                    while ((aLine = in.readLine()) != null) {
-                        out.write(aLine);
-                        out.newLine();
-                    }
-                    fis.close();
-                    in.close();
-                    out.close();
-                    fw.flush();
-                }catch (Exception io){
 
-                }
             }
         });
         menu.add(menuItem);
         menu.addSeparator();
         menuItem = new JMenuItem("Export signed xml...",
-                KeyEvent.VK_S);
+                KeyEvent.VK_D);
         menuItem.addActionListener(new ActionListener() {
                                        @Override
                                        public void actionPerformed(ActionEvent e) {
                                            JFileChooser jfc = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
-
                                            int returnValue = jfc.showOpenDialog(null);
-
                                            if (returnValue == JFileChooser.APPROVE_OPTION) {
-                                               File selectedFile = jfc.getSelectedFile();
-                                               System.out.println(selectedFile.getAbsolutePath());
-                                           }
-                                           try(OutputStreamWriter fw = new OutputStreamWriter(new FileOutputStream(jfc.getSelectedFile()+".xml"), StandardCharsets.UTF_8)) {
-                                               BufferedWriter out = new BufferedWriter(fw);
-                                               File fin = new File(ConfigManager.ticketSignedXMLFilePath);
-                                               FileInputStream fis = new FileInputStream(fin);
-                                               BufferedReader in = new BufferedReader(new InputStreamReader(fis, StandardCharsets.UTF_8));
-                                               String aLine = null;
-                                               while ((aLine = in.readLine()) != null) {
-                                                   out.write(aLine);
-                                                   out.newLine();
-                                               }
-                                               in.close();
-                                               out.close();
-                                               fw.flush();
-                                           }catch (Exception io){
-
+                                               FileHelper.saveToFile(ConfigManager.ticketSignedXMLFilePath,jfc.getSelectedFile()+".xml");
                                            }
                                        }
                                    });
         menu.add(menuItem);
-                //Build second menu in the menu bar.
-                menu = new JMenu("Help");
+        //Build second menu in the menu bar.
+        menu = new JMenu("Help");
         menu.setMnemonic(KeyEvent.VK_N);
         menuBar.add(menu);
         menuItem = new JMenuItem("About",
@@ -323,92 +179,52 @@ public class MagicLinkTool extends JFrame{
         return menuBar;
     }
 
-    private void reset(){
-        STEP=1;
-        //reset global variables
-        magicLinkCount=0;
-        if(_magicLinkViewMap!=null) {
-            _magicLinkViewMap.clear();
-        }
-        if(_magicLinkDataModelArrayList!=null) {
-            _magicLinkDataModelArrayList.clear();
-        }
-        if(keys!=null) {
-            keys.clear();
-        }
-        //clean file
-        FileHelper.deleteFile(ConfigManager.ticketSignedXMLFilePath);
-        FileHelper.deleteFile(ConfigManager.magicLinksCSVPath);
-        FileHelper.deleteFile(ConfigManager.privateKeyFilePath);
-        //reset UI
-        if(comboBoxKeysList!=null) {
-            comboBoxKeysList.removeAllItems();
-            textFieldPrivateKey.removeAll();
-        }
-        textFieldTips.setVisible(false);
-        textFieldConnectionStatus.setVisible(false);
-        jButtonConnect.setVisible(false);
-        if(comboBoxContractAddress!=null) {
-            comboBoxContractAddress.removeAllItems();
-        }
-
-        if(tabPane_container_centerPane!=null) {
-            tabPane_container_centerPane.removeAll();
-        }
-        if(tabPane_container!=null){
-            tabPane_container.removeAll();
-        }
-
-        createWizard();
-        this.revalidate();
-        this.repaint();
-        this.pack();
-    }
     /**
-     *
+     * Import Private Keys, Show web3 status
      */
-    private  void createUpperPaneForKeys() {
-        mainSplitPane_topPane = new JPanel();
+    private  void createTopPane() {
+        this.mainSplitPane_topPane = new JPanel();
         FlowLayout flowLayout = new FlowLayout();
         flowLayout.setAlignment(FlowLayout.TRAILING);
         //mainSplitPane_topPane.setBorder(new EmptyBorder(10, 10, 10, 10));
-        mainSplitPane_topPane.setLayout(new BorderLayout());
+        this.mainSplitPane_topPane.setLayout(new BorderLayout());
         JPanel controlsPane = new JPanel();
+        controlsPane.setLayout(flowLayout);
+        controlsPane.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
         JPanel leftPane = new JPanel();
         leftPane.setLayout(new GridBagLayout());
         JPanel rightPane = new JPanel();
         rightPane.setLayout(new GridBagLayout());
         rightPane.setBorder(BorderFactory.createLineBorder(Color.GREEN));
-        controlsPane.setLayout(flowLayout);
 
         leftPane.add(new JLabel("Private Key:"));
-        textFieldPrivateKey = new JTextField();
-        textFieldPrivateKey.setColumns(30);
-        leftPane.add(textFieldPrivateKey);
+        global_textFieldPrivateKey = new JTextField();
+        global_textFieldPrivateKey.setColumns(30);
+        leftPane.add(global_textFieldPrivateKey);
         JButton buttonImport=new JButton();
         buttonImport.setText("Click to Import");
-        buttonImport.setForeground(Color.red);
+        buttonImport.setForeground(Color.RED);
         buttonImport.setBackground(Color.GREEN);
         buttonImport.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try{
-                    String privateKey=textFieldPrivateKey.getText();
+                    String privateKey=global_textFieldPrivateKey.getText();
                     if(keys!=null&&keys.size()>0&&keys.containsValue(privateKey)){
                         JOptionPane.showMessageDialog(null, "Already imported!",
                                 "Error", JOptionPane.ERROR_MESSAGE);
                         return;
                     }
                     String address = CryptoHelper.getEthAddress(privateKey);
-                    comboBoxKeysList.addItem(new ComboBoxSimpleItem(address,privateKey));
                     if(keys==null){
                         keys = new ConcurrentHashMap<>();
                     }
                     keys.put(address,privateKey);
                     if(keys.size()>1){
-                        reloadMagicLink();
+                        reloadMagicLinkStatusUI();
                     }
-                    updateUITipPane();
+                    // trigger updateWeb3StatusUI()
+                    global_comboBoxKeysList.addItem(new ComboBoxSimpleItem(address,privateKey));
                 }catch (Exception ex){
                     JOptionPane.showMessageDialog(null, "Invalid PrivateKey!",
                             "Error", JOptionPane.ERROR_MESSAGE);
@@ -417,51 +233,47 @@ public class MagicLinkTool extends JFrame{
         });
         leftPane.add(buttonImport);
         rightPane.add(new JLabel("Current Key:"));
-        comboBoxKeysList = new JComboBox();
-        comboBoxKeysList.setPreferredSize(new Dimension(200, 30));
-
-        rightPane.add(comboBoxKeysList);
+        global_comboBoxKeysList = new JComboBox();
+        global_comboBoxKeysList.setPreferredSize(new Dimension(200, 30));
         if(keys!=null&&keys.size()>0){
             for(String key:keys.keySet()){
-                comboBoxKeysList.addItem(new ComboBoxSimpleItem(key,keys.get(key)));
+                global_comboBoxKeysList.addItem(new ComboBoxSimpleItem(key,keys.get(key)));
             }
         }
-        comboBoxKeysList.addItemListener(new ItemListener() {
+        rightPane.add(global_comboBoxKeysList);
+        global_comboBoxKeysList.addItemListener(new ItemListener() {
             @Override
             public void itemStateChanged(ItemEvent e) {
-                updateUITipPane();
+                updateWeb3StatusUI();
             }
         });
         controlsPane.add(leftPane);
         controlsPane.add(rightPane);
-        controlsPane.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
-        mainSplitPane_topPane.add(controlsPane,BorderLayout.NORTH);
+        this.mainSplitPane_topPane.add(controlsPane,BorderLayout.NORTH);
         JPanel tipsPane = new JPanel();
         tipsPane.setLayout(flowLayout);
-        textFieldTips=new JTextField();
-        textFieldTips.setVisible(false);
-        textFieldTips.setEditable(false);
-        textFieldTips.setBackground(Color.yellow);
-        textFieldTips.setFont(new Font("SansSerif", Font.BOLD, 15));
-        tipsPane.add(textFieldTips);
-        textFieldConnectionStatus=new JTextField();
-        textFieldConnectionStatus.setVisible(false);
-        textFieldConnectionStatus.setEditable(false);
-        tipsPane.add(textFieldConnectionStatus);
-        jButtonConnect=new JButton();
-        jButtonConnect.setVisible(false);
-        jButtonConnect.addActionListener(new ActionListener() {
+        global_textFieldTips =new JTextField();
+        global_textFieldTips.setVisible(false);
+        global_textFieldTips.setEditable(false);
+        global_textFieldTips.setBackground(Color.yellow);
+        global_textFieldTips.setFont(new Font("SansSerif", Font.BOLD, 15));
+        tipsPane.add(global_textFieldTips);
+        global_textFieldConnectionStatus =new JTextField();
+        global_textFieldConnectionStatus.setVisible(false);
+        global_textFieldConnectionStatus.setEditable(false);
+        tipsPane.add(global_textFieldConnectionStatus);
+        global_buttonConnect =new JButton();
+        global_buttonConnect.setVisible(false);
+        global_buttonConnect.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                reloadMagicLink();
-                updateUITipPane();
+                reloadMagicLinkStatusUI();
+                updateWeb3StatusUI();
             }
         });
-        tipsPane.add(jButtonConnect);
+        tipsPane.add(global_buttonConnect);
         tipsPane.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
-        updateUITipPane();
         mainSplitPane_topPane.add(tipsPane,BorderLayout.SOUTH);
-
     }
 
     /**
@@ -472,25 +284,24 @@ public class MagicLinkTool extends JFrame{
      * @throws IOException
      * @throws SAXException
      */
-    private  void createTabPane() throws IOException, SAXException {
+    private  void createMainTabPane() throws IOException, SAXException {
         //init tab pane
-        mainSplitPane_tabPane = new JTabbedPane();
-        tabPane_container = new JPanel();
-        tabPane_container.setLayout(new BoxLayout(tabPane_container, BoxLayout.Y_AXIS));
-        tabPane_container.setBorder(new EmptyBorder(10, 10, 10, 10));
-        if(_magicLinkDataModelArrayList==null||_magicLinkDataModelArrayList.size()==0){
-            STEP=1;
+        this.mainSplitPane_tabPane = new JTabbedPane();
+        this.tabPane_container = new JPanel();
+        this.tabPane_container.setLayout(new BoxLayout(this.tabPane_container, BoxLayout.Y_AXIS));
+        this.tabPane_container.setBorder(new EmptyBorder(10, 10, 10, 10));
+        if(this._magicLinkDataModelArrayList==null||this._magicLinkDataModelArrayList.size()==0){
             createWizard();
         }else{
-            STEP=2;
+            //resume magiclink pane
             createMagicLinkPane();
         }
-        mainSplitPane_tabPane.addTab("Meetup[x]",null, tabPane_container, "");
-        mainSplitPane_tabPane.setMnemonicAt(0, KeyEvent.VK_1);
-        mainSplitPane_tabPane.addTab("[+]",null, null, "");
-        mainSplitPane_tabPane.setMnemonicAt(0, KeyEvent.VK_2);
-        mainSplitPane_tabPane.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
-        mainSplitPane_tabPane.setMinimumSize(new Dimension(0,300));
+        this.mainSplitPane_tabPane.addTab("Meetup[x]",null, tabPane_container, "");
+        this.mainSplitPane_tabPane.setMnemonicAt(0, KeyEvent.VK_1);
+        this.mainSplitPane_tabPane.addTab("[+]",null, null, "");
+        this.mainSplitPane_tabPane.setMnemonicAt(0, KeyEvent.VK_2);
+        this.mainSplitPane_tabPane.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
+        this.mainSplitPane_tabPane.setMinimumSize(new Dimension(0,300));
     }
 
     /**
@@ -498,9 +309,9 @@ public class MagicLinkTool extends JFrame{
      * contract address + network type + private key
      */
     private void createWizard(){
-        tabPane_wizard = new JPanel();
-        tabPane_wizard.setLayout(new BoxLayout(tabPane_wizard, BoxLayout.Y_AXIS));
-        tabPane_wizard.setBorder(new EmptyBorder(10, 10, 10, 10));
+        this.tabPane_wizard = new JPanel();
+        this.tabPane_wizard.setLayout(new BoxLayout(this.tabPane_wizard, BoxLayout.Y_AXIS));
+        this.tabPane_wizard.setBorder(new EmptyBorder(10, 10, 10, 10));
         JPanel northPane = new JPanel();
         northPane.add(new JLabel("Deploy a new contract"));
         JTextField textFieldContractAddress = new JTextField(10);
@@ -526,12 +337,9 @@ public class MagicLinkTool extends JFrame{
                             "Please import the private key which create this contract!",
                             "Warn",
                             JOptionPane.WARNING_MESSAGE);
-                    textFieldPrivateKey.requestFocus();
+                    global_textFieldPrivateKey.requestFocus();
                 }else {
-                    ComboBoxSimpleItem selectedNetworkItem = (ComboBoxSimpleItem) comboBoxNetworkID.getSelectedItem();
-                    String networkid = selectedNetworkItem.getValue();
                     String contractAddress = textFieldContractAddress.getText();
-                    // todo validation
                     if (contractAddress == null || contractAddress.equals("")) {
                         textFieldContractAddress.selectAll();
                         JOptionPane.showMessageDialog(
@@ -542,22 +350,24 @@ public class MagicLinkTool extends JFrame{
                         contractAddress = null;
                         textFieldContractAddress.requestFocusInWindow();
                     } else {
-                        //
+                        // todo validation
                         STEP = 2;
-                        ComboBoxSimpleItem currentPrivateKeySelectedItem = (ComboBoxSimpleItem)comboBoxKeysList.getSelectedItem();
-                        XmlHelper.processContractXml(networkid, contractAddress,currentPrivateKeySelectedItem.getValue());
-                        initSessionData();
-                        updateUITipPane();
+                        ComboBoxSimpleItem selectedNetworkItem = (ComboBoxSimpleItem) comboBoxNetworkID.getSelectedItem();
+                        String networkId = selectedNetworkItem.getValue();
+                        ComboBoxSimpleItem currentPrivateKeySelectedItem = (ComboBoxSimpleItem)global_comboBoxKeysList.getSelectedItem();
+                        XmlHelper.processContractXml(networkId, contractAddress, currentPrivateKeySelectedItem.getValue());
+                        initContract();
+                        updateWeb3StatusUI();
                         createMagicLinkPane();
                     }
                 }
             }
         });
         southPane.add(buttonNextStep);
-        tabPane_wizard.add(northPane,BorderLayout.NORTH);
-        tabPane_wizard.add(centerPane,BorderLayout.CENTER);
-        tabPane_wizard.add(southPane,BorderLayout.SOUTH);
-        tabPane_container.add(tabPane_wizard);
+        this.tabPane_wizard.add(northPane,BorderLayout.NORTH);
+        this.tabPane_wizard.add(centerPane,BorderLayout.CENTER);
+        this.tabPane_wizard.add(southPane,BorderLayout.SOUTH);
+        this.tabPane_container.add(this.tabPane_wizard);
     }
 
     /**
@@ -567,17 +377,17 @@ public class MagicLinkTool extends JFrame{
         //NorthPane: Contract Address
         JPanel northPane = new JPanel();
         northPane.add(new JLabel("Contract:"));
-        comboBoxContractAddress = new JComboBox();
+        global_comboBoxContractAddress = new JComboBox();
         if (_tokenViewModel == null) {
-            //log error
-            //alert something broken
+            JOptionPane.showMessageDialog(null,
+                    "Fatal Error! please contact lyhistory@gmail.com");
             return;
         }
         for (ComboBoxSimpleItem item : _tokenViewModel.comboBoxContractAddressList) {
-            comboBoxContractAddress.addItem(item);
-            comboBoxContractAddress.setEnabled(true);
+            global_comboBoxContractAddress.addItem(item);
+            global_comboBoxContractAddress.setEnabled(true);
         }
-        northPane.add(comboBoxContractAddress);
+        northPane.add(global_comboBoxContractAddress);
 
         //CenterPane: main container for magic link
         GridBagConstraints col1Constraints = new GridBagConstraints();
@@ -607,10 +417,10 @@ public class MagicLinkTool extends JFrame{
         //render container
         //render title
         initMagicLinkCreationColumnTitle();
-        //render from autosaved magiclink.csv
         if (_magicLinkDataModelArrayList == null || _magicLinkDataModelArrayList.size() == 0) {
             addAnotherTicket(null);
         } else {
+            //resume
             for (int i = 0; i < _magicLinkDataModelArrayList.size(); ++i) {
                 addAnotherTicket(_magicLinkDataModelArrayList.get(i));
             }
@@ -630,6 +440,7 @@ public class MagicLinkTool extends JFrame{
         tabPane_container.add(centerPane, BorderLayout.CENTER);
         tabPane_container.add(buttonAddAnother, BorderLayout.SOUTH);
         if (tabPane_wizard != null) {
+            tabPane_wizard.removeAll();
             tabPane_wizard.setVisible(false);
         }
         this.setResizable(true);
@@ -866,96 +677,167 @@ public class MagicLinkTool extends JFrame{
         this.pack();
     }
 
-    /**
-     * MagicLink Helper
-     */
     // calculate tokenID and generate magic link from _magicLinkViewMap
     private void generateMagicLink(int rowNum){
-        Map<String,BigInteger> encodedValueMap=new ConcurrentHashMap<>();
-        String tokenidStr="";
-        BigInteger tokenid=BigInteger.valueOf(0);
-
-        //
-        MagicLinkToolViewModel magicLinkViewModel = _magicLinkViewMap.get(rowNum);
-        if(magicLinkViewModel.ComboBoxForXMLList!=null){
-            for(int i=0;i<magicLinkViewModel.ComboBoxForXMLList.size();++i){
-                JComboBox comboBox=magicLinkViewModel.ComboBoxForXMLList.get(i);
-                ComboBoxDataModel.ComboBoxOption c = (ComboBoxDataModel.ComboBoxOption)comboBox.getSelectedItem();
-                BigInteger value=new BigInteger(c.getKey().toString(16),16);
-                encodedValueMap.put(comboBox.getName(),value);
-            }
-        }
-        if(magicLinkViewModel.TextFieldForXMLMap!=null){
-            for(JTextField textField:magicLinkViewModel.TextFieldForXMLMap.keySet()){
-                TextFieldDataModel model=magicLinkViewModel.TextFieldForXMLMap.get(textField);
-                BigInteger encodedValue = BigInteger.valueOf(0);
-                String inputStr = textField.getText().toString();
-                if (inputStr != null && inputStr.length() > 0) {
-                    if (model.as.equals("UTF8")) {
-                        byte[] bytes = inputStr.getBytes(Charset.forName("UTF-8"));
-                        encodedValue = new BigInteger(bytes);
-                    } else if (model.as.equals("Unsigned")) {
-                        encodedValue = new BigInteger(inputStr);
-                    }
-                    encodedValue = encodedValue.shiftLeft(model.getBitshift()).and(model.getBitmask());
-                    encodedValueMap.put(model.id,encodedValue);
-                }
-            }
-        }
-        if(magicLinkViewModel.DateTimePickerMap!=null){
-            for(DateTimePickerViewModel dateTimePickerViewModel:magicLinkViewModel.DateTimePickerMap.keySet()){
-                TextFieldDataModel model=magicLinkViewModel.DateTimePickerMap.get(dateTimePickerViewModel);
-                try{
-                    BigInteger encodedValue = BigInteger.valueOf(0);
-                    DateFormat displayFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZZZZ");
-                    DateFormat targetFormat = new SimpleDateFormat("yyyyMMddHHmmssZZZZ");
-                    ComboBoxSimpleItem item = (ComboBoxSimpleItem)dateTimePickerViewModel.TimeZone.getSelectedItem();
-                    String dateStr = String.format("%s%s",dateTimePickerViewModel.DateTimePickerTime.getText(),item.getKey());
-                    displayFormat.setTimeZone(TimeZone.getTimeZone("GMT"+item.getKey()));
-                    targetFormat.setTimeZone(TimeZone.getTimeZone("GMT"+item.getKey()));
-                    Date date = displayFormat.parse(dateStr);
-                    String targetTimeStr = targetFormat.format(date);
-                    if (targetTimeStr != null && targetTimeStr.length() > 0) {
-                        byte[] bytes = targetTimeStr.getBytes(Charset.forName("UTF-8"));
-                        encodedValue = new BigInteger(bytes);
-                        encodedValue = encodedValue.shiftLeft(model.getBitshift()).and(model.getBitmask());
-                    }
-                    encodedValueMap.put(model.id,encodedValue);
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(null, "Opoos!"+ex.getMessage(),
-                            "Error", JOptionPane.ERROR_MESSAGE);
-                }
-            }
-        }
-        // now we can get the tokenID!
-        for(String key:encodedValueMap.keySet()){
-            tokenid=tokenid.or(encodedValueMap.get(key));
-        }
-
         // it's time to create the magic link!
-        ComboBoxSimpleItem contractAddressSelectedItem = (ComboBoxSimpleItem)comboBoxContractAddress.getSelectedItem();
+        ComboBoxSimpleItem contractAddressSelectedItem = (ComboBoxSimpleItem)global_comboBoxContractAddress.getSelectedItem();
+        ComboBoxSimpleItem currentPrivateKeySelectedItem = (ComboBoxSimpleItem)global_comboBoxKeysList.getSelectedItem();
+        MagicLinkHelper.generateMagicLink(rowNum,_magicLinkViewMap,contractAddressSelectedItem.getKey(),currentPrivateKeySelectedItem.getValue());
+    }
 
-        MagicLinkToolDataModel magicLinkDataModel = new MagicLinkToolDataModel();
-        magicLinkDataModel.TokenIDs = new BigInteger[]{tokenid};
-        magicLinkDataModel.Price = "0";
 
-        DateTimePickerViewModel dateTimePicker=magicLinkViewModel.DateTimePickerExpire;
-        ComboBoxSimpleItem item = (ComboBoxSimpleItem)dateTimePicker.TimeZone.getSelectedItem();
-        magicLinkDataModel.Expiry=String.format("%s%s",dateTimePicker.DateTimePickerTime.getText(),item.getKey());
-        magicLinkDataModel.timeZone = TimeZone.getTimeZone("GMT"+item.getKey());
-        magicLinkDataModel.ContractAddress=contractAddressSelectedItem.getKey();
-
-        ComboBoxSimpleItem currentPrivateKeySelectedItem = (ComboBoxSimpleItem)comboBoxKeysList.getSelectedItem();
-        magicLinkDataModel.generateMagicLink(currentPrivateKeySelectedItem.getValue());
-        //update UI
-        JTextField textFieldMagicLink = magicLinkViewModel.TextFieldMagicLink;
-        textFieldMagicLink.setText(magicLinkDataModel.MagicLink);
-        JTextField textFieldRemark = magicLinkViewModel.TextFieldRemark;
-
-        tokenidStr=tokenid.toString(16);
-        while (tokenidStr.length() < 64) {
-            tokenidStr = "0" + tokenidStr;
+    //resume reload update reset
+    private void reloadMagicLinkStatusUI(){
+        if (_tokenViewModel.comboBoxContractAddressList != null
+                &&
+                global_comboBoxKeysList != null) {
+            ComboBoxSimpleItem currentPrivateKeySelectedItem = (ComboBoxSimpleItem) global_comboBoxKeysList.getSelectedItem();
+            SessionDataHelper.initContract(_tokenViewModel.comboBoxContractAddressList.get(0).getKey(),
+                    _tokenViewModel.comboBoxContractAddressList.get(0).getValue(),
+                    currentPrivateKeySelectedItem.getValue(), currentPrivateKeySelectedItem.getKey());
         }
-        textFieldRemark.setText("(change whatever u want),Row:"+Integer.toString(rowNum)+",TokenID:"+tokenidStr);
+        if(_magicLinkDataModelArrayList != null) {
+            if (SessionDataHelper.isConnectedToWeb3()) {
+                SessionDataHelper.reloadMagicLinkStatus(_magicLinkDataModelArrayList);
+                for (Integer rowNo : _magicLinkViewMap.keySet()) {
+                    boolean redeemed = _magicLinkDataModelArrayList.get(rowNo - 1).redeemped;
+                    Map<JTextField, TextFieldDataModel> textFieldMap = _magicLinkViewMap.get(rowNo).TextFieldForXMLMap;
+                    for (JTextField textField : textFieldMap.keySet()) {
+                        textField.setEnabled(!redeemed);
+                    }
+                    List<JComboBox> comboBoxes = _magicLinkViewMap.get(rowNo).ComboBoxForXMLList;
+                    for (int i = 0; i < comboBoxes.size(); ++i) {
+                        comboBoxes.get(i).setEnabled(!redeemed);
+                    }
+                    Map<DateTimePickerViewModel, TextFieldDataModel> datetimePickerMap = _magicLinkViewMap.get(rowNo).DateTimePickerMap;
+                    for (DateTimePickerViewModel dateTimePicker : datetimePickerMap.keySet()) {
+                        dateTimePicker.TimeZone.setEnabled(!redeemed);
+                        dateTimePicker.DateTimePickerTime.setEnabled(!redeemed);
+                    }
+                }
+            }
+        }
+    }
+    private void initContract(){
+        //dependent on keys and contract
+        try {
+            _tokenViewModel = new TokenViewModel(new FileInputStream(ConfigManager.ticketSignedXMLFilePath), Locale.getDefault());
+            if (_tokenViewModel!=null&&_tokenViewModel.comboBoxContractAddressList != null
+                    &&
+                    keys != null && keys.size() > 0) {
+                Map.Entry<String,String> key=keys.entrySet().iterator().next();
+                SessionDataHelper.initContract(_tokenViewModel.comboBoxContractAddressList.get(0).getKey(),
+                        _tokenViewModel.comboBoxContractAddressList.get(0).getValue(),
+                        key.getValue(),key.getKey());
+            }
+        }catch (Exception ex){
+
+        }
+    }
+    private void resumeSessionData() {
+        try {
+            //load keys and MeetupContract.xml if available
+            if(keys==null) {
+                keys = SessionDataHelper.loadWalletFromKeystore();
+            }
+
+            initContract();
+
+            //load magiclinks if available
+            _magicLinkDataModelArrayList = SessionDataHelper.loadMagicLinksFromCSV();
+            if(_magicLinkDataModelArrayList==null||_magicLinkDataModelArrayList.size()==0){
+                STEP = 1;
+            }else{
+                STEP = 2;
+            }
+
+        }catch (Exception ex){
+
+        }
+    }
+
+    public void updateWeb3StatusUI(){
+        global_textFieldTips.setVisible(false);
+        global_textFieldConnectionStatus.setVisible(false);
+        global_buttonConnect.setVisible(false);
+        if(keys==null||keys.size()==0){
+            global_textFieldTips.setVisible(true);
+            global_textFieldTips.setText("Please import private key");
+            global_textFieldConnectionStatus.setVisible(false);
+            global_buttonConnect.setVisible(false);
+        }else if(STEP == 2){
+            global_textFieldTips.setVisible(true);
+            global_textFieldConnectionStatus.setVisible(true);
+            global_buttonConnect.setVisible(true);
+            global_textFieldTips.setText("Welcome!");
+            if (SessionDataHelper.isConnectedToWeb3()) {
+                global_textFieldConnectionStatus.setText("Connected");
+                global_textFieldConnectionStatus.setBackground(Color.green);
+                global_buttonConnect.setText("Reload");
+                global_buttonConnect.setEnabled(true);
+                global_buttonConnect.setForeground(Color.BLACK);
+                global_buttonConnect.setBackground(Color.GREEN);
+                String contractOwner = SessionDataHelper.getContractOwner();
+                ComboBoxSimpleItem currentPrivateKeySelectedItem = (ComboBoxSimpleItem) global_comboBoxKeysList.getSelectedItem();
+                if (contractOwner != null && contractOwner.isEmpty() == false
+                        &&
+                        contractOwner.equalsIgnoreCase(currentPrivateKeySelectedItem.getKey().toString()) == false) {
+                    global_textFieldTips.setText("Warning:: current selected key is not the contract owner! tickets creation with it will be invalid!!!");
+                }
+            } else {
+                global_textFieldTips.setText("Warning:: failed connection, you wouldn't know which tickets been redeemed!!!");
+                global_textFieldConnectionStatus.setText("Disconnected");
+                global_textFieldConnectionStatus.setBackground(Color.RED);
+                global_buttonConnect.setText("Retry");
+                global_buttonConnect.setEnabled(true);
+                global_buttonConnect.setForeground(Color.RED);
+                global_buttonConnect.setBackground(Color.ORANGE);
+            }
+        }
+        this.revalidate();
+        this.repaint();
+        this.pack();
+    }
+
+    private void reset(){
+        //reset global variables
+        STEP = 1;
+        magicLinkCount=0;
+        if(_magicLinkViewMap!=null) {
+            _magicLinkViewMap.clear();
+        }
+        if(_magicLinkDataModelArrayList!=null) {
+            _magicLinkDataModelArrayList.clear();
+        }
+        if(keys!=null) {
+            keys.clear();
+        }
+        //clean file
+        FileHelper.deleteFile(ConfigManager.ticketSignedXMLFilePath);
+        FileHelper.deleteFile(ConfigManager.magicLinksCSVPath);
+        FileHelper.deleteFile(ConfigManager.privateKeyFilePath);
+        //reset UI
+        if(global_comboBoxKeysList!=null) {
+            global_comboBoxKeysList.removeAllItems();
+            global_textFieldPrivateKey.removeAll();
+        }
+        global_textFieldTips.setVisible(false);
+        global_textFieldConnectionStatus.setVisible(false);
+        global_buttonConnect.setVisible(false);
+        if(global_comboBoxContractAddress!=null) {
+            global_comboBoxContractAddress.removeAllItems();
+        }
+
+        if(tabPane_container_centerPane!=null) {
+            tabPane_container_centerPane.removeAll();
+        }
+        if(tabPane_container!=null){
+            tabPane_container.removeAll();
+        }
+
+        createWizard();
+        this.revalidate();
+        this.repaint();
+        this.pack();
     }
 }

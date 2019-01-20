@@ -3,9 +3,8 @@ package io.stormbird.token.management.Util;
 import io.stormbird.token.management.ConfigManager;
 
 import javax.swing.*;
-import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 
 public class FileHelper {
     public static boolean checkFileExists(String filePath){
@@ -54,6 +53,25 @@ public class FileHelper {
             if (raf != null) {
                 raf.close();
             }
+        }
+    }
+
+    public static void saveToFile(String sourceFilePath, String destFilePath){
+        try(OutputStreamWriter fw = new OutputStreamWriter(new FileOutputStream(destFilePath), StandardCharsets.UTF_8)) {
+            BufferedWriter out = new BufferedWriter(fw);
+            File fin = new File(sourceFilePath);
+            FileInputStream fis = new FileInputStream(fin);
+            BufferedReader in = new BufferedReader(new InputStreamReader(fis, StandardCharsets.UTF_8));
+            String aLine = null;
+            while ((aLine = in.readLine()) != null) {
+                out.write(aLine);
+                out.newLine();
+            }
+            in.close();
+            out.close();
+            fw.flush();
+        }catch (Exception io){
+
         }
     }
 }

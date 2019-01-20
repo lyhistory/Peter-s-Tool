@@ -26,6 +26,11 @@ public class SessionDataHelper {
     public static void endSession(){
 
     }
+
+    public static void saveSession(Map<Integer, MagicLinkToolViewModel> dataMap,Map<String,String> keys){
+        saveMagicLinksToCSV(dataMap);
+        savePrivateKey(keys);
+    }
     public static void initContract(String contractAddress,String networkid,String privateKey,String ownerAddress){
         contractHelper = new MeetupContractHelper(contractAddress,networkid,privateKey,ownerAddress);
     }
@@ -74,7 +79,7 @@ public class SessionDataHelper {
             }
         }
     }
-    public static void reloadMagicLink(ArrayList<MagicLinkDataModel> magicLinkDataModelList){
+    public static void reloadMagicLinkStatus(ArrayList<MagicLinkDataModel> magicLinkDataModelList){
         for(int i=0;i<magicLinkDataModelList.size();++i){
             magicLinkDataModelList.get(i).redeemped=checkStatus(magicLinkDataModelList.get(i).tickets[0]);
         }
