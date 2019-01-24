@@ -5,18 +5,19 @@ import java.io.InputStream;
 
 public class ConfigManager {
 
-    public static String ticketXMLTemplatePath = "./desktop/res/MeetupContract.xml";
-    public static String ticketSignedXMLFilePath="./desktop/res/";
-    public static String magicLinksCSVPath = "./desktop/res/magiclinks.csv";
+    public static String ticketXMLTemplatePath = "./res/MeetupContract.xml";
+    public static String ticketSignedXMLFilePath="./res/MeetupContract-signed.xml";
+    public static String magicLinksCSVPath = "./res/magiclinks.csv";
+    public static String privateKeyFilePath = "./res/keystore.ks";
 
-    public static String privateKeyFilePath = "./desktop/res/keystore.ks";
-
-    public String init(){
+    public static void init(){
         File f = new File(ConfigManager.ticketXMLTemplatePath);
         if(f.exists()==false){
-            return "MeetupContract.xml Template missing!";
+            ticketXMLTemplatePath = "./desktop/res/MeetupContract.xml";
+            ticketSignedXMLFilePath="./desktop/res/MeetupContract-signed.xml";
+            magicLinksCSVPath = "./desktop/res/magiclinks.csv";
+            privateKeyFilePath = "./desktop/res/keystore.ks";
         }
-        return "";
     }
 
 }

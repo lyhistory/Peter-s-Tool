@@ -15,7 +15,7 @@ dependencies {
 sourceSets {
     main {
         resources {
-            srcDirs "../contracts"
+            srcDirs=["./res"]
         }
     }
 }
