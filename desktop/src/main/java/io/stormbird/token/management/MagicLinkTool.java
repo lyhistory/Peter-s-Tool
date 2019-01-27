@@ -254,7 +254,8 @@ public class MagicLinkTool extends JFrame{
         JPanel tipsPane = new JPanel();
         tipsPane.setLayout(flowLayout);
         global_textFieldTips =new JTextField();
-        global_textFieldTips.setVisible(false);
+        global_textFieldTips.setText("Welcome to use Peter's tool");
+        global_textFieldTips.setVisible(true);
         global_textFieldTips.setEditable(false);
         global_textFieldTips.setBackground(Color.yellow);
         global_textFieldTips.setFont(new Font("SansSerif", Font.BOLD, 15));
@@ -275,6 +276,10 @@ public class MagicLinkTool extends JFrame{
         tipsPane.add(global_buttonConnect);
         tipsPane.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
         mainSplitPane_topPane.add(tipsPane,BorderLayout.SOUTH);
+        this.setResizable(true);
+        this.revalidate();
+        this.repaint();
+        this.pack();
     }
 
     /**
@@ -319,6 +324,7 @@ public class MagicLinkTool extends JFrame{
         JComboBox comboBoxNetworkID=new JComboBox();
         comboBoxNetworkID.addItem(new ComboBoxSimpleItem("mainnet", "1"));
         comboBoxNetworkID.addItem(new ComboBoxSimpleItem("Ropsten", "3"));
+        comboBoxNetworkID.addItem(new ComboBoxSimpleItem("xDai", "100"));
         comboBoxNetworkID.addItem(new ComboBoxSimpleItem("CustomRPC", "0"));
 
         JPanel centerPane = new JPanel();
@@ -352,15 +358,11 @@ public class MagicLinkTool extends JFrame{
                         textFieldContractAddress.requestFocusInWindow();
                     } else {
                         // todo validation
-                        STEP = 2;
-                        //ConfigManager.ticketSignedXMLFilePath+=contractAddress+".xml";
                         ComboBoxSimpleItem selectedNetworkItem = (ComboBoxSimpleItem) comboBoxNetworkID.getSelectedItem();
                         String networkId = selectedNetworkItem.getValue();
                         ComboBoxSimpleItem currentPrivateKeySelectedItem = (ComboBoxSimpleItem)global_comboBoxKeysList.getSelectedItem();
                         XmlHelper.processContractXml(networkId, contractAddress, currentPrivateKeySelectedItem.getValue());
-                        initContract();
-                        updateWeb3StatusUI();
-                        createMagicLinkPane();
+                        goNext();
                     }
                 }
             }
@@ -370,6 +372,19 @@ public class MagicLinkTool extends JFrame{
         this.tabPane_wizard.add(centerPane,BorderLayout.CENTER);
         this.tabPane_wizard.add(southPane,BorderLayout.SOUTH);
         this.tabPane_container.add(this.tabPane_wizard);
+    }
+
+    private void goNext(){
+        STEP = 2;
+        //ConfigManager.ticketSignedXMLFilePath+=contractAddress+".xml";
+
+        initContract();
+        updateWeb3StatusUI();
+        createMagicLinkPane();
+
+        this.mainSplitPane_topPane.revalidate();
+        this.mainSplitPane_topPane.repaint();
+        this.pack();
     }
 
     /**
@@ -446,6 +461,8 @@ public class MagicLinkTool extends JFrame{
             tabPane_wizard.setVisible(false);
         }
         this.setResizable(true);
+//        this.revalidate();
+//        this.repaint();
         this.pack();
     }
     // render the column title by xml attributes + token status/remark
@@ -614,6 +631,24 @@ public class MagicLinkTool extends JFrame{
         flowLayout.setVgap(0);
         //flowLayout.setAlignment(FlowLayout.TRAILING);
         tokenStatusPane.setLayout(flowLayout);
+        tokenStatusPane.add(new JLabel("Price"));
+        JTextField textFieldPriceInEth = new JTextField();
+        textFieldPriceInEth.addKeyListener(new KeyAdapter() {
+            public void keyReleased(KeyEvent e) {
+                try {
+                    generateMagicLink(Integer.valueOf(textFieldRowNum.getName()));
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(null, "Invalid Data Type! Please check the type",
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                    textFieldPriceInEth.setText("");
+                    textFieldPriceInEth.requestFocusInWindow();
+                }
+            }
+        });
+        textFieldPriceInEth.setText("0");
+        textFieldPriceInEth.setColumns(6);
+        magicLinkViewModel.setTextFieldPriceInEth(textFieldPriceInEth);
+        tokenStatusPane.add(textFieldPriceInEth);
         tokenStatusPane.add(new JLabel("expiry"));
         JPanel dateTimePickerPane = new JPanel();
         JTextField textFieldHiddenValue = new JTextField();
@@ -759,7 +794,7 @@ public class MagicLinkTool extends JFrame{
     }
 
     public void updateWeb3StatusUI(){
-        global_textFieldTips.setVisible(false);
+        //global_textFieldTips.setVisible(false);
         global_textFieldConnectionStatus.setVisible(false);
         global_buttonConnect.setVisible(false);
         if(keys==null||keys.size()==0){

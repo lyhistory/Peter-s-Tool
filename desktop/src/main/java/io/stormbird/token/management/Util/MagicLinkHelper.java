@@ -126,7 +126,7 @@ public class MagicLinkHelper {
 
         MagicLinkToolDataModel magicLinkDataModel = new MagicLinkToolDataModel();
         magicLinkDataModel.TokenIDs = new BigInteger[]{tokenid};
-        magicLinkDataModel.Price = "0";
+        magicLinkDataModel.Price = magicLinkViewModel.TextFieldPriceInEth.getText();
 
         DateTimePickerViewModel dateTimePicker=magicLinkViewModel.DateTimePickerExpire;
         ComboBoxSimpleItem item = (ComboBoxSimpleItem)dateTimePicker.TimeZone.getSelectedItem();

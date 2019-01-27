@@ -61,7 +61,7 @@ public class RedeemSpawnableToken extends JFrame{
                                                        MagicLinkDataModel model=parseMagicLink(link);
                                                        MeetupContractHelper contractHelper = new MeetupContractHelper(contractAddr,network,privateKey,"");
                                                        Sign.SignatureData sig = sigFromByteArray(model.signature);
-                                                       contractHelper.redeemSpawnableToken(BigInteger.valueOf(model.expiry),Arrays.asList(model.tickets),sig.getV(),sig.getR(),sig.getS(),recepient);
+                                                       contractHelper.redeemSpawnableToken(BigInteger.valueOf(model.expiry),Arrays.asList(model.tickets),sig.getV(),sig.getR(),sig.getS(),recepient,model.priceWei);
                                                    }
                                                    }
                                            });

@@ -40,7 +40,8 @@ public class MagicLinkToolDataModel {
         try {
             BigInteger privateKey = new BigInteger(privateKeyofOrganizer, 16);
 
-            BigInteger priceInSzabo = (new BigInteger(Price));
+            BigInteger priceInWei = Convert.toWei(Price, Convert.Unit.ETHER).toBigInteger();
+            BigInteger priceInSzabo = Convert.fromWei(new BigDecimal(priceInWei), Convert.Unit.SZABO).toBigInteger();
             DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZZZZ");
             df.setTimeZone(this.timeZone);
             Date date = null;

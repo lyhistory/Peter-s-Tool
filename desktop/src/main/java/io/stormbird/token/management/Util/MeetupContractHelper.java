@@ -50,6 +50,10 @@ public class MeetupContractHelper {
                 host="https://ropsten.infura.io/v3/3305734c1fad4ad1ab11fd0e9a74059e";
                 port="80";
                 break;
+            case "100":
+                host="https://dai.poa.network";
+                port="80";
+                break;
             default:
                 host="http://127.0.0.1";
                 port="8545";
@@ -102,12 +106,12 @@ public class MeetupContractHelper {
         }
     }
 
-    public void redeemSpawnableToken(BigInteger expiry, List<BigInteger> tickets, byte v, byte[] r, byte[] s, String recipient){
+    public void redeemSpawnableToken(BigInteger expiry, List<BigInteger> tickets, byte v, byte[] r, byte[] s, String recipient,BigInteger priceWei){
         try {
             byte[] _v = new byte[] {0, v};
             BigInteger biV = new BigInteger(_v);
 
-            TransactionReceipt transactionReceipt =  contract.spawnPassTo(expiry,tickets,biV,r,s,recipient).send();
+            TransactionReceipt transactionReceipt =  contract.spawnPassTo(expiry,tickets,biV,r,s,recipient,priceWei).send();
             boolean spawned = contract.spawned(tickets.get(0)).send();
             String getTheContractAddress =  contract.getThisContractAddress().send();
         }catch (ConnectException e){

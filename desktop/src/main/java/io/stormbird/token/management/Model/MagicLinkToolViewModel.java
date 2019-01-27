@@ -42,7 +42,10 @@ public class MagicLinkToolViewModel {
         this.DateTimePickerExpire.TimeZone=timeZoneTime;
     }
 
-
+    public JTextField TextFieldPriceInEth;
+    public void setTextFieldPriceInEth(JTextField textFieldPriceInEth){
+        this.TextFieldPriceInEth = textFieldPriceInEth;
+    }
     public JTextField TextFieldMagicLink;
     public JTextField TextFieldRemark;
 
