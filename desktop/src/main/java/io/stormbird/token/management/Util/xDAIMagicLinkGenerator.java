@@ -21,7 +21,7 @@ import java.util.Base64;
 
 public class xDAIMagicLinkGenerator {
 
-    private static final String contractAddress = "0xC207354389b6Aa16c53e0ba5903eCD2BccEdc8D6";
+    private static final String contractAddress = "0x9d928a678eeaaEfA19eF73E5368830b3476C0678"; //TODO use own contract
     private static final byte encodingByte = 0x04;
     private static final byte[] prefix = new byte[]{
             0x58,
@@ -34,14 +34,17 @@ public class xDAIMagicLinkGenerator {
             0x50
     }; //XDAIDROP in ascii bytes
     private static final int messageByteCount = 40;
-    private static final ECKeyPair adminKeyPair = ECKeyPair.create(BigInteger.ONE); //TODO use own key
+    private static final ECKeyPair adminKeyPair = ECKeyPair.create(new BigInteger(
+            "30e193c5c48044a0b6cc66fa8e9a08a478cbe9e88ac77123810da5ebf150f84b",
+            16)
+    ); //TODO use own key
 
     public static void main(String[] args) {
         //TODO set below values to what you want
-        BigInteger nonce = BigInteger.ZERO;
-        BigInteger expiry = BigInteger.ZERO;
-        int numberOfLinks = 5;
-        BigInteger amountOfxDAIPerLink = BigInteger.ONE;
+        BigInteger nonce = BigInteger.TEN;
+        BigInteger expiry = new BigInteger("1648635171");
+        int numberOfLinks = 1;
+        BigInteger amountOfxDAIPerLink = BigInteger.ONE; //in szabo
         try {
             while(numberOfLinks > 0) {
                 //increment nonce by one each time
@@ -108,8 +111,8 @@ public class xDAIMagicLinkGenerator {
     private static String formUniversalLinkFromMessageAndSignature(byte[] message, byte[] signature) {
         byte[] completeLink = new byte[message.length + signature.length + 1];
         completeLink[0] = encodingByte;
-        System.arraycopy(message, 0, completeLink, 0, message.length);
-        System.arraycopy(signature, 0, completeLink, message.length, signature.length);
+        System.arraycopy(message, 0, completeLink, 1, message.length);
+        System.arraycopy(signature, 0, completeLink, message.length + 1, signature.length);
         StringBuilder sb = new StringBuilder();
         sb.append("https://app.awallet.io/");
         //URL Safe
