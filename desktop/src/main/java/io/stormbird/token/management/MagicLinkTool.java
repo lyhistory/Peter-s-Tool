@@ -444,6 +444,9 @@ public class MagicLinkTool extends JFrame{
         }
 
         //BottomPane: add another button
+        JPanel moreMagicLinkButtonPanel =new JPanel();
+        FlowLayout flowLayout = new FlowLayout();
+        moreMagicLinkButtonPanel.setLayout(flowLayout);
         JButton buttonAddAnother = new JButton();
         buttonAddAnother.setText("Add Another");
         buttonAddAnother.addActionListener(new ActionListener() {
@@ -452,10 +455,26 @@ public class MagicLinkTool extends JFrame{
                 addAnotherTicket(null);
             }
         });
-
+        moreMagicLinkButtonPanel.add(buttonAddAnother);
+        JButton buttonDuplicateAnother = new JButton();
+        buttonDuplicateAnother.setText("Duplicate Another");
+        buttonDuplicateAnother.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if(_magicLinkViewMap!=null&&_magicLinkViewMap.size()>0){
+                    MagicLinkToolViewModel model= _magicLinkViewMap.get(magicLinkCount);
+                    String lastMagicLink = model.TextFieldMagicLink.getText();
+                    MagicLinkDataModel magicLinkData = SessionDataHelper.readMagicLink(lastMagicLink);
+                    addAnotherTicket(magicLinkData);
+                }else {
+                    addAnotherTicket(null);
+                }
+            }
+        });
+        moreMagicLinkButtonPanel.add(buttonDuplicateAnother);
         tabPane_container.add(northPane, BorderLayout.NORTH);
         tabPane_container.add(centerPane, BorderLayout.CENTER);
-        tabPane_container.add(buttonAddAnother, BorderLayout.SOUTH);
+        tabPane_container.add(moreMagicLinkButtonPanel, BorderLayout.SOUTH);
         if (tabPane_wizard != null) {
             tabPane_wizard.removeAll();
             tabPane_wizard.setVisible(false);
@@ -645,7 +664,11 @@ public class MagicLinkTool extends JFrame{
                 }
             }
         });
-        textFieldPriceInEth.setText("0");
+        if(magicLinkData!=null){
+            textFieldPriceInEth.setText(Double.toString(magicLinkData.price));
+        }else {
+            textFieldPriceInEth.setText("0");
+        }
         textFieldPriceInEth.setColumns(6);
         magicLinkViewModel.setTextFieldPriceInEth(textFieldPriceInEth);
         tokenStatusPane.add(textFieldPriceInEth);

@@ -84,6 +84,16 @@ public class SessionDataHelper {
             magicLinkDataModelList.get(i).redeemped=checkStatus(magicLinkDataModelList.get(i).tickets[0]);
         }
     }
+    public static MagicLinkDataModel readMagicLink(String magicLink){
+        MagicLinkDataModel model = MagicLinkHelper.parseMagicLink(magicLink);
+        if (model != null) {
+            model.magicLink = magicLink;
+            model.remark = "";
+            model.redeemped = checkStatus(model.tickets[0]);
+            model.enabled = !model.redeemped;
+        }
+        return model;
+    }
     public static ArrayList<MagicLinkDataModel> loadMagicLinksFromCSV(){
         ArrayList<MagicLinkDataModel> magicLinkDataModelList=new ArrayList<MagicLinkDataModel>();
         try {
