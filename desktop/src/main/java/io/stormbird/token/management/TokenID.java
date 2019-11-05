@@ -23,6 +23,7 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import org.web3j.crypto.*;
 
@@ -601,31 +602,31 @@ public class TokenID extends JFrame{
         col2Constraints.gridy = magicLinkCount;
 
         int size = comboBoxTickets.getItemCount();
-        BigInteger[] tickets=new BigInteger[size];
+        List<BigInteger> tickets = new ArrayList<>();
         for (int i = 0; i < size; i++) {
             ComboBoxSimpleItem item = (ComboBoxSimpleItem)comboBoxTickets.getItemAt(i);
-            tickets[i]=new BigInteger(item.getValue(),16);
+            tickets.add(new BigInteger(item.getValue(),16));
         }
-        //
-        BigInteger price=(new BigInteger(fieldPriceInMicroEth.getText()));
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZZZZ");
         ComboBoxSimpleItem item = (ComboBoxSimpleItem)timeZoneExpireTime.getSelectedItem();
         String dateStr = String.format("%s%s",dateTimePickerExpireTime.getText(),item.getKey());
         Date date = df.parse(dateStr);
         BigInteger expiryTimestamp=BigInteger.valueOf(date.getTime()/1000);
-        String contractAddress=fieldContractAddress.getText();
-        String privateKey=fieldPrivateKey.getText();
+        String contractAddress= fieldContractAddress.getText();
+        String privateKey= fieldPrivateKey.getText();
         BigInteger privateKeyofOrganizer=new BigInteger(privateKey,16);
-        byte[] linkData = encodeMessageForSpawning(price,expiryTimestamp,tickets,contractAddress);
-        Sign.SignatureData signedData = signMagicLink(linkData,privateKeyofOrganizer);
-        byte[] signature=covertSigToByte(signedData);
-        byte[] completeLink = new byte[linkData.length + signature.length];
-        System.arraycopy(linkData, 0, completeLink, 0, linkData.length);
-        System.arraycopy(signature, 0, completeLink, linkData.length, signature.length);
+        byte[] message = encodeMessageForSpawnable(expiryTimestamp, tickets ,contractAddress);
+        Sign.SignatureData signedData = signMagicLink(message, privateKeyofOrganizer);
+        byte[] signature = covertSigToByte(signedData);
+        byte[] completeLink = new byte[message.length + 1 + signature.length];
+        //encoding byte for spawnable, added to the link but not signed
+        completeLink[0] = (byte) 0x02;
+        System.arraycopy(message, 0, completeLink, 0, message.length);
+        System.arraycopy(signature, 0, completeLink, message.length, signature.length);
 
         StringBuilder magicLinkSB = new StringBuilder();
 
-        magicLinkSB.append("https://app.awallet.io/");
+        magicLinkSB.append("https://aw.app/");
         byte[] b64 = Base64.getUrlEncoder().encode(completeLink);
         magicLinkSB.append(new String(b64));
 
@@ -649,14 +650,6 @@ public class TokenID extends JFrame{
         scrollPane.setPreferredSize(new Dimension(80,20));
         scrollPane.setViewportView(textPane);
         lowerPane_container.add(scrollPane,col2Constraints);
-//        lowerPane_container.revalidate();
-//        lowerPane_container.repaint();
-//        mainSplitPane_lowerPane.revalidate();
-//        mainSplitPane_lowerPane.repaint();
-//        mainSplitPane.revalidate();
-//        mainSplitPane.repaint();
-//        this.revalidate();
-//        this.repaint();
         this.pack();
     }
 
@@ -671,57 +664,43 @@ public class TokenID extends JFrame{
         sig.put(subV);
         return sig.array();
     }
-    public Sign.SignatureData signMagicLink(byte[] linkData, BigInteger privateKeyOfOrganiser)
+
+    public Sign.SignatureData signMagicLink(byte[] message, BigInteger privateKeyOfOrganiser)
     {
         ECKeyPair ecKeyPair  = ECKeyPair.create(privateKeyOfOrganiser);
         //returns the v, r and s signature params
-        return Sign.signMessage(linkData, ecKeyPair);
+        return Sign.signMessage(message, ecKeyPair);
     }
-    public static byte[] encodeMessageForSpawning (
-            BigInteger priceInSzabo,
+
+    private static void addExpiryAndContractToByteBuffer(
+            ByteBuffer message,
             BigInteger expiryTimestamp,
-            BigInteger[] tickets,
-            String contractAddress)
-    {
-        //0x01: Standard magic link.
-        //0x02: Spawn token magic link.
-        //0x03: Customisable spawn token link.
-        int byteLength=0;
-        byte[] leadingbytes = hexStringToBytes("02");
-        byteLength=1;//leading lenght
-        byte[] priceInMicroWei = priceInSzabo.toByteArray();
-        byteLength+=32;//priceinwei
+            String contractAddress
+    ) {
         byte[] expiry = expiryTimestamp.toByteArray();
-        byteLength+=32;//expiry
-        byteLength+=20;//contract address
-        byteLength+=tickets.length*32;//tickets
-        ByteBuffer message = ByteBuffer.allocate(byteLength);
-        message.put(leadingbytes);
-        byte[] leadingZeros = new byte[32 - priceInMicroWei.length];
-        message.put(leadingZeros);
-        message.put(priceInMicroWei);
         byte[] leadingZerosExpiry = new byte[32 - expiry.length];
         message.put(leadingZerosExpiry);
         message.put(expiry);
-        byte[] contract = hexStringToBytes(Numeric.cleanHexPrefix(contractAddress));
+        byte[] contract = Numeric.hexStringToByteArray(contractAddress);
         message.put(contract);
-        for(BigInteger ticket : tickets) {
+    }
+
+    public static byte[] encodeMessageForSpawnable(
+            BigInteger expiryTimestamp,
+            List<BigInteger> tickets,
+            String contractAddress
+    )
+    {
+        ByteBuffer message = ByteBuffer.allocate(52 + tickets.size() * 32);
+        //price must be set to zero as the paymaster is covering the transaction
+        addExpiryAndContractToByteBuffer(message, expiryTimestamp, contractAddress);
+        for(BigInteger i : tickets) {
             //need to pad so that it is 32bytes
-            String paddedTicket = Numeric.toHexStringNoPrefixZeroPadded(ticket, 64);
-            byte[] ticketAsByteArray = hexStringToBytes(paddedTicket);
+            String paddedTicket = Numeric.toHexStringNoPrefixZeroPadded(i, 64);
+            byte[] ticketAsByteArray = Numeric.hexStringToByteArray(paddedTicket);
             message.put(ticketAsByteArray);
         }
         return message.array();
     }
-    private static byte[] hexStringToBytes(String s)
-    {
-        int len = s.length();
-        byte[] data = new byte[len / 2];
-        for (int i = 0; i < len; i += 2)
-        {
-            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
-                    + Character.digit(s.charAt(i + 1), 16));
-        }
-        return data;
-    }
+
 }
