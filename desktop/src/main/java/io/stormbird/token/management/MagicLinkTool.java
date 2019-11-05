@@ -63,7 +63,7 @@ public class MagicLinkTool extends JFrame{
         try {
             this._magicLinkViewMap = new ConcurrentHashMap<>();
 
-            this.resumeSessionData();   //for rendering createTopPane(), createMainTabPane() and updateWeb3StatusUI()
+            //this.resumeSessionData();   //for rendering createTopPane(), createMainTabPane() and updateWeb3StatusUI()
 
             this.setJMenuBar(this.createMenuBar());
             this.createTopPane();

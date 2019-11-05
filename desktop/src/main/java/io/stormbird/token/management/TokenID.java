@@ -568,14 +568,7 @@ public class TokenID extends JFrame{
             offsetMinsStr=String.valueOf(offsetMins);
         }
         currentTimezone = String.format("%s%s", offsetHrsStr,offsetMinsStr);
-        //comboBoxTimezone.setSelectedItem(new ComboBoxSimpleItem(currentTimezone,currentTimezone));
         setSelectedItem(currentTimezone,comboBoxTimezone);
-//        comboBoxTimezone.addItemListener(new ItemListener() {
-//                                             public void itemStateChanged(ItemEvent e) {
-//                                                 ComboBoxSimpleItem item = (ComboBoxSimpleItem)e.getItem();
-//                                                 expireTimezone = item.getKey();
-//                                             }
-//                                         });
         dateTimePickerPane.add(dateTimePicker,col1Constraints);
         dateTimePickerPane.add(comboBoxTimezone,col2Constraints);
     }
@@ -612,6 +605,7 @@ public class TokenID extends JFrame{
         String dateStr = String.format("%s%s",dateTimePickerExpireTime.getText(),item.getKey());
         Date date = df.parse(dateStr);
         BigInteger expiryTimestamp=BigInteger.valueOf(date.getTime()/1000);
+        System.out.println(expiryTimestamp.toString());
         String contractAddress= fieldContractAddress.getText();
         String privateKey= fieldPrivateKey.getText();
         BigInteger privateKeyofOrganizer=new BigInteger(privateKey,16);
@@ -626,7 +620,7 @@ public class TokenID extends JFrame{
 
         StringBuilder magicLinkSB = new StringBuilder();
 
-        magicLinkSB.append("https://aw.app/");
+        magicLinkSB.append("https://ropsten.aw.app/");
         byte[] b64 = Base64.getUrlEncoder().encode(completeLink);
         magicLinkSB.append(new String(b64));
 

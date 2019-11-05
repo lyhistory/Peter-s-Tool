@@ -58,7 +58,7 @@ public class MagicLinkToolDataModel {
 
             StringBuilder magicLinkSB = new StringBuilder();
 
-            magicLinkSB.append("https://app.awallet.io/");
+            magicLinkSB.append("https://aw.app/");
             byte[] b64 = Base64.getUrlEncoder().encode(completeLink);
             magicLinkSB.append(new String(b64));
             this.MagicLink = magicLinkSB.toString();

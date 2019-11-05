@@ -7,7 +7,7 @@
     <tb:name xml:lang="es">Cupones</tb:name>
     <tb:name xml:lang="ru">Ваучеры</tb:name>
     <tb:interface>erc875</tb:interface>
-  <tb:address network="3">0x86a2390e15c287d4cb22768d4d1069ef82b7c27b</tb:address></tb:contract>
+  <tb:address network="3">0x86A2390E15C287D4cB22768d4d1069ef82B7C27B</tb:address></tb:contract>
   <tb:contract type="wallet">
     <!-- users can buy tickets using SPG points -->
     <tb:address network="1">0xdecafbaddecafbaddecafbaddecafbaddecafbad</tb:address>
