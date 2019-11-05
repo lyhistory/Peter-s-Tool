@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<tb:token xmlns:tb="http://attestation.id/ns/tbml"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://attestation.id/ns/tbml ../../tbml.xsd"
+          xmlns:xml="http://www.w3.org/XML/1998/namespace">
+  <tb:contract id="holding_contract" type="holding">
+    <tb:address network="3">0x16e58F9a98bc46a572CFb9ce28DDEeaf76AF645a</tb:address>
+    <tb:name xml:lang="ru">Ваучеры</tb:name>
+    <tb:name xml:lang="en">Vouchers</tb:name>
+    <tb:name xml:lang="zh">门票兑换券</tb:name>
+    <tb:name xml:lang="es">Cupones</tb:name>
+    <tb:name xml:lang="ru">Ваучеры</tb:name>
+    <tb:interface>erc875</tb:interface>
+  </tb:contract>
+  <tb:contract type="wallet">
+    <!-- users can buy tickets using SPG points -->
+    <tb:address network="1">0xdecafbaddecafbaddecafbaddecafbaddecafbad</tb:address>
+    <tb:name>Starwood Preferred Guest</tb:name>
+  </tb:contract>
+  <!-- consider metadata of tokens, e.g. quantifier in each languages -->
+  <tb:features>
+    <!-- a feature is only usable if all tokens are included, but, if
+         only some are excluded, the feature is still available for
+         the ones that are not excluded. Think about redeem function,
+         the button should be grayed out with the "include" message
+         there -->
+    <tb:feature type="market-queue">
+      <tb:include>valid</tb:include>
+      <tb:exclude>invited</tb:exclude>
+      <tb:exclude>discounted</tb:exclude>
+      <tb:gateway>https://482kdh4npg.execute-api.ap-southeast-1.amazonaws.com/dev/</tb:gateway>
+      <tb:message xml:lang="en" type="exclude">%name% can't be traded on the market</tb:message>
+      <tb:message xml:lang="zh" type="exclude">%name% 不能再在市场上交易</tb:message>
+      <tb:message type="include">Only %name% can be traded on the market</tb:message>
+      <tb:message type="include">只有%name%才可以在市场上交易</tb:message>
+    </tb:feature>
+    <tb:feature type="market-contract">
+      <tb:include>valid</tb:include>
+      <tb:exclude>discounted</tb:exclude>
+      <tb:exclude>invited</tb:exclude>
+      <!-- buy and sell tokens on this contract -->
+      <tb:address network="1">0xdecafbaddecafbaddecafbaddecafbaddecafbad</tb:address>
+      <tb:message xml:lang="en" type="exclude">%name% can't be traded on the market</tb:message>
+      <tb:message xml:lang="zh" type="exclude">%name% 不能再在市场上交易</tb:message>
+      <tb:message type="include">Only %name% can be traded on the market</tb:message>
+      <tb:message type="include">只有%name%才可以在市场上交易</tb:message>
+    </tb:feature>
+    <tb:feature type="magic-link">
+      <tb:include>valid</tb:include>
+      <tb:exclude>discounted</tb:exclude>
+      <tb:prefix>https://app.awallet.io/</tb:prefix>
+      <tb:message xml:lang="en" type="exclude">%name% can't be traded with MagicLink</tb:message>
+      <tb:message type="include">Only %name% can be traded with MagicLink</tb:message>
+      <tb:message xml:lang="zh" type="exclude">%name% 不能用MagicLink交易</tb:message>
+      <tb:message xml:lang="zh" type="include">只有末到期的票才可以用MagicLink交易</tb:message>
+    </tb:feature>
+    <tb:feature type="transfer-link">
+      <tb:exclude>discounted</tb:exclude>
+      <tb:exclude>invited</tb:exclude>
+      <tb:prefix>https://app.awallet.io/</tb:prefix>
+      <tb:message xml:lang="en" type="exclude">%name% can't be traded on the market</tb:message>
+      <tb:message xml:lang="zh" type="exclude">%name% 不能再在市场上交易</tb:message>
+    </tb:feature>
+    <tb:feature type="feemaster">
+      <tb:exclude>expired</tb:exclude>
+      <tb:feemaster>https://app.awallet.io:80/api/claimToken</tb:feemaster>
+      <tb:message xml:lang="en" type="include">%name% can't be imported</tb:message>
+      <tb:message xml:lang="zh" type="include">不能收下%name%</tb:message>
+    </tb:feature>
+    <tb:feature type="qr-redeem">
+      <tb:include>valid</tb:include>
+      <tb:redeem format="Aztec"/>
+      <tb:message xml:lang="en" type="include">Only %name% can be redeemed for paper tickets</tb:message>
+      <tb:message xml:lang="zh" type="include">只有%name%才可以兑换纸票</tb:message>
+    </tb:feature>
+    <tb:feature type="nfc-redeem">
+      <tb:include>valid</tb:include>
+      <tb:device>decafbaddecafbad</tb:device>
+      <tb:message xml:lang="en" type="include">Only %name% can be redeemed for paper tickets</tb:message>
+      <tb:message xml:lang="zh" type="include">只有%name%才可以兑换纸票</tb:message>
+    </tb:feature>
+  </tb:features>
+  <tb:selections>
+    <tb:selection id="discounted">
+      <tb:name xml:lang="en">Discount Tickets</tb:name>
+      <tb:name xml:lang="zh">打折票</tb:name>
+      <tb:filter>(|category=打折票)(category=Discounted))</tb:filter>
+    </tb:selection>
+    <tb:selection id="invited">
+      <tb:name xml:lang="en">Gift Ticket</tb:name>
+      <tb:name xml:lang="zh">赠票</tb:name>
+      <tb:filter>gifted</tb:filter>
+    </tb:selection>
+    <tb:selection id="valid">
+      <tb:name xml:lang="en">Tickets not expired</tb:name>
+      <tb:name xml:lang="zh">末到期票</tb:name>
+      <tb:filter>!expired</tb:filter>
+    </tb:selection>
+    <tb:selection id="expired">
+      <tb:name xml:lang="en">Expired Tickets</tb:name>
+      <tb:name xml:lang="zh">已经过期的票</tb:name>
+      <tb:filter>expired</tb:filter>
+    </tb:selection>
+  </tb:selections>
+  <tb:grouping>
+    <tb:group bitmask="FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF" name="default">
+      <tb:consecutive_groups/>
+    </tb:group>
+  </tb:grouping>
+  <tb:ordering>
+    <tb:order bitmask="FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF" name="default">
+      <tb:byName field="locality"/>
+      <tb:byValue field="match"/>
+      <tb:byValue field="number"/>
+    </tb:order>
+    <tb:order bitmask="FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF" name="concise">
+      <tb:byValue field="match"/>
+      <tb:byValue field="category"/>
+      <tb:byValue field="number"/>
+    </tb:order>
+  </tb:ordering>
+
+  <!-- token UI definition can happen here -->
+  <tb:attribute-types>
+    <tb:attribute-type id="country" oid="2.5.4.7" syntax="1.3.6.1.4.1.1466.115.121.1.15">
+      <tb:name xml:lang="en">Country</tb:name>
+      <tb:name xml:lang="zh">国家</tb:name>
+      <tb:origin bitmask="FFFF000000000000000000000000000000000000000000000000000000000000" as="utf8"/>
+    </tb:attribute-type>
+    <tb:attribute-type id="locality" oid="2.5.4.7" syntax="1.3.6.1.4.1.1466.115.121.1.15">
+      <tb:name xml:lang="en">City</tb:name>
+      <tb:name xml:lang="zh">城市</tb:name>
+      <tb:origin contract="holding-contract">
+        <tb:function name="getLocality">
+          <tb:inputs>
+            <tb:uint256 ref="tokenID"/>
+          </tb:inputs>
+        </tb:function>
+      </tb:origin>
+    </tb:attribute-type>
+    <tb:attribute-type id="time" syntax="1.3.6.1.4.1.1466.115.121.1.24">
+      <tb:name xml:lang="en">Time</tb:name>
+      <tb:name xml:lang="zh">时间</tb:name>
+      <tb:origin bitmask="0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0000000000000000000000" as="utf8"/>
+    </tb:attribute-type>
+    <tb:attribute-type id="numero" syntax="1.3.6.1.4.1.1466.115.121.1.27">
+      <tb:name xml:lang="en">No</tb:name>
+      <tb:name xml:lang="zh">票号</tb:name>
+      <tb:origin bitmask="000000000000000000000000000000000000000000FFFF000000000000000000" as="unsigned"/>
+    </tb:attribute-type>
+    <tb:attribute-type id="category" syntax="1.3.6.1.4.1.1466.115.121.1.15">
+      <tb:name xml:lang="en">Cat</tb:name>
+      <tb:name xml:lang="zh">等级</tb:name>
+      <tb:origin bitmask="0000000000000000000000000000000000000000000000FFFFFFFFFF00000000" as="utf8"/>
+    </tb:attribute-type>
+    <tb:attribute-type id="section" syntax="1.3.6.1.4.1.1466.115.121.1.15">
+      <tb:name xml:lang="en">Section</tb:name>
+      <tb:name xml:lang="zh">区号</tb:name>
+      <tb:origin bitmask="00000000000000000000000000000000000000000000000000000000FFFFFFFF" as="utf8"/>
+    </tb:attribute-type>
+    <tb:attribute-type id="expired" syntax="1.3.6.1.4.1.1466.115.121.1.7"> <!-- boolean -->
+      <tb:origin contract="holding-contract" as="mapping">
+        <tb:function name="isExpired">
+          <tb:inputs>
+            <tb:uint256 ref="tokenID"/>
+          </tb:inputs>
+        </tb:function>
+        <tb:mapping>
+          <tb:option key="0">
+            <tb:value>FALSE</tb:value>
+          </tb:option>
+          <tb:option key="1">
+            <tb:value>TRUE</tb:value>
+          </tb:option>
+        </tb:mapping>
+      </tb:origin>
+    </tb:attribute-type>
+    <tb:attribute-type id="street" syntax="1.3.6.1.4.1.1466.115.121.1.15" as="utf8"> <!-- string -->
+      <tb:origin contract="holding-contract">
+        <tb:function name="getStreet">
+          <tb:inputs>
+            <tb:uint256 ref="tokenID"/>
+          </tb:inputs>
+        </tb:function>
+      </tb:origin>
+    </tb:attribute-type>
+    <tb:attribute-type id="building" syntax="1.3.6.1.4.1.1466.115.121.1.15" as="utf8"> <!-- string -->
+      <tb:origin contract="holding-contract">
+        <tb:function name="getBuildingName">
+          <tb:inputs>
+            <tb:uint256 ref="tokenID"/>
+          </tb:inputs>
+        </tb:function>
+      </tb:origin>
+    </tb:attribute-type>
+    <tb:attribute-type id="state" syntax="1.3.6.1.4.1.1466.115.121.1.15" as="utf8"> <!-- string -->
+      <tb:origin contract="holding-contract">
+        <tb:function name="getState">
+          <tb:inputs>
+            <tb:uint256 ref="tokenID"/>
+          </tb:inputs>
+        </tb:function>
+      </tb:origin>
+    </tb:attribute-type>
+  </tb:attribute-types>
+</tb:token>
