@@ -18,9 +18,10 @@ import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class MagicLinkHelper {
+    public static String importTemplate = "https://app.awallet.io/";
     // parse magic link
     public static MagicLinkDataModel parseMagicLink(String link){
-        final String importTemplate = "https://app.awallet.io/";
+
         int offset = link.indexOf(importTemplate);
         if (offset > -1)
         {

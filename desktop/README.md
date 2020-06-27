@@ -9,8 +9,11 @@ For Windows users
 cd E:\workspace\blockchain\ethereum\alpha-wallet\github\Peter-s-Tool\desktop
 
 3. execute cmd:
- ../gradlew run
+ ..\gradlew run
 
+4. build
+..\gradlew build
+find zip file under /build/distribution
 
 For Linux users
 to do, haven't tried on linux yet

@@ -42,6 +42,8 @@ public class MagicLinkTool extends JFrame{
     private JPanel mainSplitPane_topPane;
     private JComboBox global_comboBoxKeysList;
     private JTabbedPane mainSplitPane_tabPane; //
+    private JScrollPane mainSplitPane_tabPane_scrollPane;
+    private ProgressMonitor progressMonitor;
 
     private JPanel tabPane_container;
     private JPanel tabPane_wizard;
@@ -59,6 +61,13 @@ public class MagicLinkTool extends JFrame{
     private Map<Integer, MagicLinkToolViewModel> _magicLinkViewMap;
     private static ArrayList<MagicLinkDataModel> _magicLinkDataModelArrayList;
 
+    private JToggleButton toggleBtn;
+    private JPanel batchCtlPane_container;
+    private JPanel batchCtlPane;
+    private JTextField global_textFieldBatchNumber;
+    private JTextField global_textFieldPrefix;
+    private static boolean isBatchMode=false;
+
     public MagicLinkTool(){
         try {
             this._magicLinkViewMap = new ConcurrentHashMap<>();
@@ -72,8 +81,9 @@ public class MagicLinkTool extends JFrame{
             this.updateWeb3StatusUI();
 
             this.mainSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, mainSplitPane_topPane, mainSplitPane_tabPane);
-            //this.mainSplitPane.setMinimumSize(new Dimension(900,300));
+            this.mainSplitPane.setMaximumSize(new Dimension(0,800));
             this.setContentPane(mainSplitPane);
+            this.setMaximumSize(new Dimension(0,900));
             //this.setMinimumSize(new Dimension(900,300));
             this.setTitle("MagicLink Generator");
             //this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -143,7 +153,7 @@ public class MagicLinkTool extends JFrame{
                 int returnValue = jfc.showOpenDialog(null);
                 if (returnValue == JFileChooser.APPROVE_OPTION) {
                     SessionDataHelper.saveMagicLinksToCSV(_magicLinkViewMap);
-                    FileHelper.saveToFile(ConfigManager.magicLinksCSVPath, jfc.getSelectedFile()+".csv");
+                    FileHelper.saveToFile(ConfigManager.magicLinksCSVPath, jfc.getSelectedFile() + ".csv");
                 }
 
             }
@@ -275,7 +285,131 @@ public class MagicLinkTool extends JFrame{
         });
         tipsPane.add(global_buttonConnect);
         tipsPane.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
-        mainSplitPane_topPane.add(tipsPane,BorderLayout.SOUTH);
+        mainSplitPane_topPane.add(tipsPane,BorderLayout.CENTER);
+        batchCtlPane_container = new JPanel();
+        batchCtlPane_container.setLayout(flowLayout);
+        batchCtlPane = new JPanel();
+        batchCtlPane.setVisible(false);
+        toggleBtn = new JToggleButton();
+        toggleBtn.setBorderPainted(false);
+        toggleBtn.setText("Switch To BatchMode");
+        toggleBtn.setSelectedIcon(new ImageIcon("./res/toggle_on.png"));
+        toggleBtn.setIcon(new ImageIcon("./res/toggle_off.png"));
+        toggleBtn.addItemListener(new ItemListener() {
+
+            @Override
+            public void itemStateChanged(ItemEvent event) {
+                if(event.getStateChange()==ItemEvent.SELECTED){
+                    batchCtlPane.setVisible(true);
+                    isBatchMode=true;
+                    toggleBtn.setVisible(false);
+                } else if(event.getStateChange()==ItemEvent.DESELECTED){
+                    batchCtlPane.setVisible(false);
+                    isBatchMode=false;
+                }
+            }
+        });
+        batchCtlPane_container.add(toggleBtn);
+        JLabel labelForBatchNumber = new JLabel();
+        labelForBatchNumber.setText("Batch Num:");
+        batchCtlPane.add(labelForBatchNumber);
+        global_textFieldBatchNumber = new JTextField();
+        global_textFieldBatchNumber.setEditable(true);
+        global_textFieldBatchNumber.setEnabled(true);
+        global_textFieldBatchNumber.setColumns(10);
+        global_textFieldBatchNumber.addKeyListener(new KeyAdapter() {
+            public void keyReleased(KeyEvent e) {
+                try {
+                    int batchNumber=Integer.valueOf(global_textFieldBatchNumber.getText());
+
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(null, "Invalid Data Type! Please check the type",
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                    global_textFieldBatchNumber.setText("");
+                    global_textFieldBatchNumber.requestFocusInWindow();
+                }
+            }
+        });
+        batchCtlPane.add(global_textFieldBatchNumber);
+        JLabel labelForPrefix = new JLabel();
+        labelForPrefix.setText("Link Prefix:");
+        batchCtlPane.add(labelForPrefix);
+        global_textFieldPrefix = new JTextField();
+        global_textFieldPrefix.setEditable(true);
+        global_textFieldPrefix.setEnabled(true);
+        global_textFieldPrefix.setColumns(40);
+        batchCtlPane.add(global_textFieldPrefix);
+
+        JButton btnGenerate=new JButton();
+        btnGenerate.setText("Generate Now");
+        btnGenerate.setForeground(Color.ORANGE);
+        btnGenerate.setBackground(Color.gray);
+        btnGenerate.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try{
+
+                    int batchNumber=0;
+                    String prefix="";
+                    if(global_textFieldBatchNumber.getText()!=null&&global_textFieldBatchNumber.getText().toString().equalsIgnoreCase("")==false){
+                        batchNumber=Integer.valueOf(global_textFieldBatchNumber.getText());
+                    }
+                    if(batchNumber<2){
+                        JOptionPane.showMessageDialog(null, "batch number must be > 1!",
+                                "Error", JOptionPane.WARNING_MESSAGE);
+                        return;
+                    }
+                    if(global_textFieldPrefix.getText()!=null&&global_textFieldPrefix.getText().toString().equalsIgnoreCase("")==false){
+                        prefix=global_textFieldPrefix.getText();
+                    }
+
+                    progressMonitor = new ProgressMonitor(MagicLinkTool.this,
+                            "Processing, Please take a cup of tea...",
+                            "", 0, 100);
+                    progressMonitor.setProgress(0);
+                    progressMonitor.setNote("processing....");
+                    //step 1: handle prefix
+                    if(prefix!=null&&prefix!="") {
+                        if(prefix.lastIndexOf('/')!=prefix.length()-1){
+                            prefix+="/";
+                        }
+                        for (int idx = 1; idx <= magicLinkCount; ++idx) {
+                            MagicLinkToolViewModel model = _magicLinkViewMap.get(idx);
+                            JTextField textField = model.TextFieldMagicLink;
+                            String newMagicLink = textField.getText().replace(MagicLinkHelper.importTemplate, prefix);
+                            textField.setText(newMagicLink);
+                        }
+                        MagicLinkHelper.importTemplate=prefix;
+                    }
+                    //step 2: batch add
+                    if(_magicLinkViewMap!=null&&_magicLinkViewMap.size()>0){
+                        MagicLinkToolViewModel model= _magicLinkViewMap.get(magicLinkCount);
+                        String lastMagicLink = model.TextFieldMagicLink.getText();
+                        MagicLinkDataModel magicLinkData = SessionDataHelper.readMagicLink(lastMagicLink);
+                        int id=2;
+                        int totalBatchNumber = batchNumber;
+                        while(batchNumber>1) {
+                            progressMonitor.setProgress((int) (Math.floor(id/totalBatchNumber)*100));
+                            addAnotherTicket(magicLinkData,id);
+                            Thread.sleep(100);
+                            batchNumber-=1;
+                            id+=1;
+                        }
+                    }
+                    progressMonitor.setNote("done!");
+                    MagicLinkTool.this.validate();
+                    MagicLinkTool.this.repaint();
+                    MagicLinkTool.this.pack();
+                    progressMonitor.setProgress(100);
+                }catch (Exception ex){
+                    JOptionPane.showMessageDialog(null, "Unexpected error!",
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+        batchCtlPane.add(btnGenerate);
+        batchCtlPane_container.add(batchCtlPane);
+        mainSplitPane_topPane.add(batchCtlPane_container,BorderLayout.SOUTH);
         this.setResizable(true);
         this.revalidate();
         this.repaint();
@@ -293,21 +427,32 @@ public class MagicLinkTool extends JFrame{
     private  void createMainTabPane() throws IOException, SAXException {
         //init tab pane
         this.mainSplitPane_tabPane = new JTabbedPane();
+
         this.tabPane_container = new JPanel();
         this.tabPane_container.setLayout(new BoxLayout(this.tabPane_container, BoxLayout.Y_AXIS));
         this.tabPane_container.setBorder(new EmptyBorder(10, 10, 10, 10));
+        //this.tabPane_container.setPreferredSize(new Dimension(1000, 500));
+        //this.tabPane_container.setMaximumSize(new Dimension(0,800));
+
+        this.mainSplitPane_tabPane_scrollPane=new JScrollPane(tabPane_container);
+        this.mainSplitPane_tabPane_scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        this.mainSplitPane_tabPane_scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        this.mainSplitPane_tabPane.setPreferredSize(new Dimension(1000, 500));
+        this.mainSplitPane_tabPane.addTab("Meetup[x]",null, mainSplitPane_tabPane_scrollPane, "");
+        this.mainSplitPane_tabPane.setMnemonicAt(0, KeyEvent.VK_1);
+        this.mainSplitPane_tabPane.addTab("[+]",null, null, "");
+        this.mainSplitPane_tabPane.setMnemonicAt(0, KeyEvent.VK_2);
+        this.mainSplitPane_tabPane.setPreferredSize(new Dimension(1000, 500));
+        this.mainSplitPane_tabPane.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
+        //this.mainSplitPane_tabPane.setMinimumSize(new Dimension(0,300));
+        this.mainSplitPane_tabPane.setMaximumSize(new Dimension(0,600));
+
         if(this._magicLinkDataModelArrayList==null||this._magicLinkDataModelArrayList.size()==0){
             createWizard();
         }else{
             //resume magiclink pane
             createMagicLinkPane();
         }
-        this.mainSplitPane_tabPane.addTab("Meetup[x]",null, tabPane_container, "");
-        this.mainSplitPane_tabPane.setMnemonicAt(0, KeyEvent.VK_1);
-        this.mainSplitPane_tabPane.addTab("[+]",null, null, "");
-        this.mainSplitPane_tabPane.setMnemonicAt(0, KeyEvent.VK_2);
-        this.mainSplitPane_tabPane.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
-        this.mainSplitPane_tabPane.setMinimumSize(new Dimension(0,300));
     }
 
     /**
@@ -435,11 +580,11 @@ public class MagicLinkTool extends JFrame{
         //render title
         initMagicLinkCreationColumnTitle();
         if (_magicLinkDataModelArrayList == null || _magicLinkDataModelArrayList.size() == 0) {
-            addAnotherTicket(null);
+            addAnotherTicket(null,-1);
         } else {
             //resume
             for (int i = 0; i < _magicLinkDataModelArrayList.size(); ++i) {
-                addAnotherTicket(_magicLinkDataModelArrayList.get(i));
+                addAnotherTicket(_magicLinkDataModelArrayList.get(i),-1);
             }
         }
 
@@ -452,7 +597,7 @@ public class MagicLinkTool extends JFrame{
         buttonAddAnother.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                addAnotherTicket(null);
+                addAnotherTicket(null,-1);
             }
         });
         moreMagicLinkButtonPanel.add(buttonAddAnother);
@@ -465,9 +610,9 @@ public class MagicLinkTool extends JFrame{
                     MagicLinkToolViewModel model= _magicLinkViewMap.get(magicLinkCount);
                     String lastMagicLink = model.TextFieldMagicLink.getText();
                     MagicLinkDataModel magicLinkData = SessionDataHelper.readMagicLink(lastMagicLink);
-                    addAnotherTicket(magicLinkData);
+                    addAnotherTicket(magicLinkData,-1);
                 }else {
-                    addAnotherTicket(null);
+                    addAnotherTicket(null,-1);
                 }
             }
         });
@@ -513,7 +658,7 @@ public class MagicLinkTool extends JFrame{
 
     }
     // add new magicLink generation form in row, managed by Map<Integer, MagicLinkToolViewModel> _magicLinkViewMap
-    private void addAnotherTicket(MagicLinkDataModel magicLinkData){
+    private void addAnotherTicket(MagicLinkDataModel magicLinkData, int withNewId){
         boolean enabled=true;
         BigInteger tokenID = BigInteger.valueOf(0);
         if(magicLinkData!=null&&magicLinkData.tickets.length>0){
@@ -735,6 +880,20 @@ public class MagicLinkTool extends JFrame{
         this.validate();
         this.repaint();
         this.pack();
+        if(withNewId>1) {
+            MagicLinkToolViewModel model=_magicLinkViewMap.get(magicLinkCount);
+            for(Map.Entry<JTextField,TextFieldDataModel> entry : model.TextFieldForXMLMap.entrySet()){
+                JTextField textField = entry.getKey();
+                if(textField.getName().toString().equalsIgnoreCase("numero")){
+                    textField.setText(String.valueOf(withNewId));
+                }
+            }
+            generateMagicLink(Integer.valueOf(textFieldRowNum.getName()));
+//            this.validate();
+//            this.repaint();
+//            this.pack();
+        }
+
     }
 
     // calculate tokenID and generate magic link from _magicLinkViewMap

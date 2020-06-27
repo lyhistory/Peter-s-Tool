@@ -1,5 +1,6 @@
 package io.stormbird.token.management.Model;
 
+import io.stormbird.token.management.Util.MagicLinkHelper;
 import org.web3j.crypto.ECKeyPair;
 import org.web3j.crypto.Sign;
 import org.web3j.utils.Convert;
@@ -58,7 +59,7 @@ public class MagicLinkToolDataModel {
 
             StringBuilder magicLinkSB = new StringBuilder();
 
-            magicLinkSB.append("https://app.awallet.io/");
+            magicLinkSB.append(MagicLinkHelper.importTemplate);
             byte[] b64 = Base64.getUrlEncoder().encode(completeLink);
             magicLinkSB.append(new String(b64));
             this.MagicLink = magicLinkSB.toString();
